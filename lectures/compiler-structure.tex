@@ -1,0 +1,86 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage[T2A]{fontenc}
+
+\usepackage{amssymb, amsmath}
+\usepackage{alltt}
+\usepackage{pslatex}
+\usepackage{epigraph}
+\usepackage{verbatim}
+\usepackage{soul}
+\usepackage{latexsym}
+\usepackage{array}
+\usepackage{comment}
+\usepackage{makeidx}
+\usepackage{listings}
+\usepackage{indentfirst}
+\usepackage{verbatim}
+\usepackage{color}
+\usepackage{url}
+\usepackage{xspace}
+\usepackage{hyperref}
+\usepackage{stmaryrd}
+\usepackage{tikz}
+\usetikzlibrary{arrows,decorations.pathmorphing,backgrounds,fit,positioning,shapes.symbols,chains}
+\usepackage{euscript}
+\usepackage{mathtools}
+\usepackage{mathrsfs}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{graphicx}
+\usepackage{euscript}
+\usepackage{mathtools}
+\usepackage{transparent}
+
+\sloppy
+
+\newcommand{\lama}{$\lambda\kern -.1667em\lower -.5ex\hbox{$a$}\kern -.1000em\lower .2ex\hbox{$\mathcal M$}\kern -.1000em\lower -.5ex\hbox{$a$}$\xspace}
+
+\mode<presentation>{
+  \usetheme{IPLC}
+}
+
+
+\begin{document}
+
+\begin{frame}[fragile]{Обобщенная структура компилятора}
+\tikzstyle{arrow} = [thick,->,>=stealth]  
+\begin{tikzpicture}[node distance = 2cm,
+                    auto,
+                    font=\footnotesize,
+                    every node/.style={node distance=1cm},
+                    comment/.style={rectangle, inner sep= 5pt, text width=4cm, node distance=0.25cm, font=\scriptsize\sffamily},
+                    force/.style={rectangle, draw, fill=black!10,inner sep=5pt, font=\bfseries\scriptsize\sffamily}]
+  \node (source) [force]                         {\scalebox{0.8}{Source Code}};
+  \node (AST)    [force, right = of source]      {\scalebox{0.8}{AST}};
+  \node (SM)     [force, right = of AST]         {\scalebox{0.8}{SM Code}};
+  \node (x86)    [force, right = of SM ]         {\scalebox{0.8}{Native Code}};
+  \node (ASTint) [font=\tiny, below = of AST]    {Source Interpreter};
+  \node (SMint)  [font=\tiny, below = of SM]     {SM Interpreter};
+  \node (x86h)   [font=\tiny, below = of x86, rounded corners, rectangle, draw, dashed, text width=1cm, text centered]{x86-32};
+  \draw [arrow] (source)       -- node [font=\tiny, text width = 0.8cm] {Parser}          (AST);
+  \draw [arrow] (AST)          -- node [font=\tiny, text width = 0.8cm] {SM Compiler}     (SM);
+  \draw [arrow] (SM)           -- node [font=\tiny, text width = 0.8cm] {Native Compiler} (x86);
+  \draw [arrow] (AST.south)    -- (ASTint.north);
+  \draw [arrow] (SM.south)     -- (SMint.north);            
+  \draw [arrow] (x86.south)    -- (x86h.north);          
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}[fragile]{Слайд}
+Ру-ру-ру
+
+\end{frame}
+
+\begin{frame}[fragile]{Слайд}
+Ру-ру-ру
+
+\end{frame}
+
+\begin{frame}[fragile]{Слайд}
+Ру-ру-ру
+
+\end{frame}
+
+\end{document}
