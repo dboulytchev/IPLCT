@@ -100,17 +100,84 @@
 
 \begin{frame}[fragile]{Трансляция}
   \begin{itemize}
-  \item Трансляция: синтаксическое преобразование программы на одном языке в программу на другом
-    \begin{itemize}
-      \item Исходный язык: язык, с которого производится трансляция
-      \item Целевой язык: язык, в который производится трансляция
-      \item Инструментальный язык: язык реализации транслятора
-    \end{itemize}
+  \item Синтаксическое преобразование программы на одном языке в программу на другом
+    \vskip1cm
+    \begin{figure}
+    \begin{tikzpicture}[node distance = 2cm,auto,font=\footnotesize,
+% STYLES
+every node/.style={node distance=1cm},
+% The comment style is used to describe the characteristics of each force
+comment/.style={rectangle, inner sep= 5pt, text width=8cm, node distance=1cm, font=\scriptsize\sffamily},
+% The force style is used to draw the forces' name
+pgm/.style={tape, draw, inner sep=5pt, font=\it\scriptsize\sffamily},
+trn/.style={circle, draw, inner sep=5pt, font=\it\scriptsize\sffamily}
+      ]
+      \node (trn) [trn] {Транслятор};
+      \node (src) [pgm, left=of trn, minimum height=1.5cm] {Программа};
+      \node (tag) [pgm, right=of trn, minimum height=1.5cm] {Программа};
+      
+      \draw [-stealth] (src) -- (trn);      
+      \draw [-stealth] (trn) -- (tag);
+      
+      \onslide<2->{
+        \node (srcLan) [below=of src] {\textit{\textsf{\tiny{\begin{tabular}{c}
+                                                                исходный язык\\
+                                                                (source language)
+                                                             \end{tabular}
+                                      }}}};
+        \draw [-stealth] (srcLan) -- (src);
+       }
+
+      \onslide<3->{
+        \node (tagLan) [below=of tag] {\textit{\textsf{\tiny{\begin{tabular}{c}
+                                                                целевой язык\\
+                                                                (target language)
+                                                             \end{tabular}
+                                      }}}};
+        \draw [-stealth] (tagLan) -- (tag);
+      }
+
+      \onslide<4->{
+        \node (impLan) [below=of trn] {\textit{\textsf{\tiny{\begin{tabular}{c}
+                                                                инструментальный язык\\
+                                                                (implementation language)
+                                                             \end{tabular}
+                                      }}}};      
+        \draw [-stealth] (impLan) -- (trn);
+      }
+    \end{tikzpicture}
+    \end{figure}
+   % \begin{itemize}
+   %   \item Исходный язык: язык, с которого производится трансляция
+   %   \item Целевой язык: язык, в который производится трансляция
+   %   \item Инструментальный язык: язык реализации транслятора
+   %  \end{itemize}
   \end{itemize}  
 \end{frame}
 
-\begin{frame}[fragile]{Метапрограммирование}
-  kkk
+\begin{frame}[fragile]{Виды трансляторов}
+  \begin{center}
+    Языки \emph{высокого} уровня \emph{vs.} языки \emph{низкого} уровня
+  \end{center}  
+  \begin{itemize}
+    \item \onslide<2->{$\mbox{\emph{высокий}}\to\mbox{\emph{высокий}}$~--- конвертор}
+    \item \onslide<3->{$\mbox{\emph{высокий}}\to\mbox{\emph{низкий}}$~--- компилятор}
+    \item \onslide<4->{$\mbox{\emph{низкий}}\to\mbox{\emph{высокий}}$~--- декомпилятор}
+    \item \onslide<5->{$\mbox{\emph{низкий}}\to\mbox{\emph{низкий}}$~--- бинарный транслятор}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Раскрутка (\emph{bootstrapping})}
+  \begin{center}
+       Язык реализации = исходный язык
+    \begin{figure}
+      \includegraphics[scale=0.2]{images/bootstrapping.png}
+    \end{figure}
+  \end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Корректность \emph{vs.} частичная корректность}
+x
 \end{frame}
 
 \end{document}
