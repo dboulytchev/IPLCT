@@ -23,7 +23,7 @@
 srcdir = @srcdir@
 VPATH = @srcdir@
 
-CC = @CC@ -ftime-dump -O3
+CC = @CC@ -ftime-report -O3
 ASCPP = @ASCPP@
 
 INSTALL = @INSTALL@
