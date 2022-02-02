@@ -167,6 +167,33 @@ trn/.style={circle, draw, inner sep=5pt, font=\it\scriptsize\sffamily}
   \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]{Окружение и кросс-компиляция}
+  \begin{itemize}
+  \onslide<2->{ 
+  \item Окружение (\emph{environment}):
+    \begin{itemize}
+    \item аппаратная архитектура
+    \item ОС
+    \item библиотеки
+    \end{itemize}
+  }
+  \onslide<3->{
+  \item \emph{Инструментальное} окружение vs. \emph{целевое} окружение
+  }
+  \onslide<4->{
+  \item \emph{Кросс}-компиляция (\emph{cross-compilation}):
+    \begin{figure}
+    \begin{tikzpicture}
+      \node (impl)                     {\includegraphics{images/supercomputer.jpg}};
+      \node (target) [right=of impl]   {\includegraphics[scale=0.05]{images/raspberry.png}};
+      \node (pad)    [right=of target] {};
+      \draw [-stealth] (impl) -- (target);
+    \end{tikzpicture}
+    \end{figure}
+  }
+  \end{itemize}
+\end{frame}
+
 \begin{frame}[fragile]{Раскрутка (\emph{bootstrapping})}
   \begin{center}
        Язык реализации = исходный язык
@@ -176,8 +203,168 @@ trn/.style={circle, draw, inner sep=5pt, font=\it\scriptsize\sffamily}
   \end{center}
 \end{frame}
 
-\begin{frame}[fragile]{Корректность \emph{vs.} частичная корректность}
-x
+\begin{frame}[fragile]{Полная \emph{vs.} частичная корректность}
+  
+  \begin{itemize}
+    \onslide<2->{
+    \item \emph{Полная} корректность:}
+    \onslide<3->{
+    \begin{figure}
+      \begin{tikzpicture}
+        \node (a-src-x)                    {x};
+        \node (a-src-y) [right=of a-src-x] {y};
+        \draw [-stealth] (a-src-x) -- node[above]{\scalebox{0.5}{исходная}} (a-src-y);
+        
+        \node (righta)  [right=of a-src-y,yshift=1mm] {$\xRightarrow{\phantom{XXX}}$};
+        
+        \node (a-tgt-x) [right=of righta,yshift=-1mm]  {x};
+        \node (a-tgt-y) [right=of a-tgt-x] {y};
+        \draw [-stealth] (a-tgt-x) -- node[above]{\scalebox{0.5}{целевая}}  (a-tgt-y);
+      \end{tikzpicture}      
+    \end{figure}}
+    \onslide<4->{
+    \begin{figure}
+      \begin{tikzpicture}
+        \node (a-src-x)                    {x};
+        \node (a-src-y) [right=of a-src-x] {y};
+        \draw [-stealth] (a-src-x) -- node[above]{\scalebox{0.5}{исходная}} (a-src-y);
+        
+        \node (righta)  [right=of a-src-y,yshift=1mm] {$\xLeftarrow{\phantom{XXX}}$};
+        
+        \node (a-tgt-x) [right=of righta,yshift=-1mm]  {x};
+        \node (a-tgt-y) [right=of a-tgt-x] {y};
+        \draw [-stealth] (a-tgt-x) -- node[above]{\scalebox{0.5}{целевая}}  (a-tgt-y);
+
+        \onslide<5->{
+          \draw [color=red] (0, -0.5) -- (7, 0.5);
+          \draw [color=red] (0, 0.5) -- (7, -0.5);
+        }
+      \end{tikzpicture}      
+    \end{figure}}
+    \onslide<5->{
+    \item \emph{Частичная} корректность
+      \begin{tikzpicture}[overlay]
+        \draw [-stealth] (-1.5, -0.3) .. controls (-0.8, -1) and (0, -1) .. (0.3, 0.5);
+      \end{tikzpicture}
+    }
+  \end{itemize}
+  
+\end{frame}
+
+\begin{frame}[fragile]{Архитектура компиляторов}
+  \begin{itemize}
+    \onslide<2->{
+    \item Просмотры (\emph{passes})
+    }
+    \onslide<3->{
+    \item Промежуточное представление (\emph{intermediate representation, IR})
+    }
+  \end{itemize}
+  \begin{figure}
+    \begin{tikzpicture}[node distance=0.5mm]
+      \onslide<4-5>{
+      \node                                                                                                  (pad)    {};
+      \node [shape=rectangle,draw,rounded corners,below=of pad,minimum width=2.8cm,minimum height=0.45cm]    (syntax) {\scriptsize{\begin{tabular}{c}
+                                                                                                                                        синтаксический\\
+                                                                                                                                        анализ
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of syntax,minimum width=2.8cm,minimum height=0.45cm] (types)  {\scriptsize{\begin{tabular}{c}
+                                                                                                                                        анализ\\
+                                                                                                                                        типов
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of types,minimum width=2.8cm,minimum height=0.45cm]  (other)  {\scriptsize{...}};
+      \begin{scope}
+        \node[fit = (pad)(syntax)(types)(other),shape=rectangle,draw,rounded corners] (analysis) {};
+      \end{scope}
+      \node [shape=rectangle, fill=black,yshift=2.8mm] (analysis) {\scriptsize{\begin{tabular}{c}
+                                                                                  Анализ \\
+                                                                                (frontend)
+                                                                               \end{tabular}}};
+      }
+      \onslide<5>{
+      \node [right=3.7cm of pad]                                                                               (pads)    {};
+      \node [shape=rectangle,draw,rounded corners,below=of pads,minimum width=2.6cm,minimum height=0.4cm]    (syntaxs) {\scriptsize{\begin{tabular}{c}
+                                                                                                                                        выбор\\
+                                                                                                                                        инструкций
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of syntaxs,minimum width=2.6cm,minimum height=0.4cm] (typess)  {\scriptsize{\begin{tabular}{c}
+                                                                                                                                         распределение\\
+                                                                                                                                         регистров
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of typess,minimum width=2.6cm,minimum height=0.4cm]  (others)  {\scriptsize{...}};
+      \begin{scope}
+        \node[fit = (pads)(syntaxs)(typess)(others),shape=rectangle,draw,rounded corners] (synthesis) {};
+      \end{scope}
+      \node [shape=rectangle, fill=black,yshift=2.8mm,xshift=3.9cm] (synthesis) {\scriptsize{\begin{tabular}{c}
+                                                                                                   Синтез \\
+                                                                                                  (backend)
+                                                                                             \end{tabular}}};
+      \draw [-stealth,thick] (1.7,-0.7) -- (2.4,-0.7);
+      }
+      \onslide<6>{
+      \node                                                                                                 (pad)    {};
+      \node [shape=rectangle,draw,rounded corners,below=of pad,minimum width=2.8cm,minimum height=0.45cm]    (syntax) {\scriptsize{\begin{tabular}{c}
+                                                                                                                                        синтаксический\\
+                                                                                                                                        анализ
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of syntax,minimum width=2.8cm,minimum height=0.45cm] (types)  {\scriptsize{\begin{tabular}{c}
+                                                                                                                                        анализ\\
+                                                                                                                                        типов
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of types,minimum width=2.8cm,minimum height=0.45cm]  (other)  {\scriptsize{...}};
+      \begin{scope}
+        \node[fit = (pad)(syntax)(types)(other),shape=rectangle,draw,rounded corners] (analysis) {};
+      \end{scope}
+      \node [shape=rectangle, fill=black,yshift=2.8mm] (analysis) {\scriptsize{\begin{tabular}{c}
+                                                                                  Анализ \\
+                                                                                (frontend)
+                                                                               \end{tabular}}};
+
+
+      \node [right=3.7cm of pad]                                                                               (pado)    {};
+      \node [shape=rectangle,draw,rounded corners,below=of pado,minimum width=2.6cm,minimum height=0.4cm]    (syntaxo) {\scriptsize{\begin{tabular}{c}
+                                                                                                                                        оптимизация\\
+                                                                                                                                        переходов
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of syntaxo,minimum width=2.6cm,minimum height=0.4cm] (typeso)  {\scriptsize{\begin{tabular}{c}
+                                                                                                                                         устранение\\
+                                                                                                                                         мертвого кода
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of typeso,minimum width=2.6cm,minimum height=0.4cm]  (othero)  {\scriptsize{...}};
+      \begin{scope}
+        \node[fit = (pado)(syntaxo)(typeso)(othero),shape=rectangle,draw,rounded corners] (opt) {};
+      \end{scope}
+      \node [shape=rectangle, fill=black,yshift=2.8mm,xshift=3.9cm] (synthesis) {\scriptsize{\begin{tabular}{c}
+                                                                                                   Оптимизация \\
+                                                                                                  (middle-end)
+                                                                                             \end{tabular}}};
+      \draw [-stealth,thick] (1.7,-0.7) -- (2.4,-0.7);
+
+      \node [right=7.7cm of pad]                                                                               (pads)    {};
+      \node [shape=rectangle,draw,rounded corners,below=of pads,minimum width=2.6cm,minimum height=0.4cm]    (syntaxs) {\scriptsize{\begin{tabular}{c}
+                                                                                                                                         выбор\\
+                                                                                                                                         инструкций
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of syntaxs,minimum width=2.6cm,minimum height=0.4cm] (typess)  {\scriptsize{\begin{tabular}{c}
+                                                                                                                                         распределение\\
+                                                                                                                                         регистров
+                                                                                                                                    \end{tabular}}};
+      \node [shape=rectangle,draw,rounded corners,below=of typess,minimum width=2.6cm,minimum height=0.4cm]  (others)  {\scriptsize{...}};
+      \begin{scope}
+        \node[fit = (pads)(syntaxs)(typess)(others),shape=rectangle,draw,rounded corners] (synthesis) {};
+      \end{scope}
+      \node [shape=rectangle, fill=black,yshift=2.8mm,xshift=7.9cm] (synthesis) {\scriptsize{\begin{tabular}{c}
+                                                                                                   Синтез \\
+                                                                                                  (backend)
+                                                                                             \end{tabular}}};
+      \draw [-stealth,thick] (5.65,-0.7) -- (6.35,-0.7);
+      }
+    \end{tikzpicture}
+  \end{figure}
+\end{frame}
+
+\begin{frame}[fragile]{Компилятор \lama}
+  x
 \end{frame}
 
 \end{document}
