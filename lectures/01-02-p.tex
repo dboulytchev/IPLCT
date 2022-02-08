@@ -14,24 +14,27 @@
 
 \begin{document}
 
-\begin{frame}[fragile]{Языки программирования}
-  \onslide<2->{
-  \begin{columns}
-  \column{0.6\textwidth}
-  \begin{itemize}      
-  \item Синтаксис
-    \onslide<3->{\begin{itemize}\item Форма представления программ\end{itemize}}
-  \item Семантика
-    \onslide<4->{\begin{itemize}\item ``Смысл'' программ\end{itemize}}
-  \item Прагматика
-    \onslide<5->{\begin{itemize}\item Взаимодействие языка программирования с программистом\end{itemize}}
-  \end{itemize}
-\column{0.4\textwidth}
-\begin{figure}
-  \includegraphics[scale=0.25]{images/morris.jpg}
-  \caption{Чарльз Уильям Моррис (1903-1979)}
- \end{figure}
-\end{columns}}  
+\begin{frame}[fragile]{Метапрограммирование}
+  \begin{figure}
+    \begin{tikzpicture}[node distance=0mm]
+      \node[shape=tape,draw]                   (src) {\scriptsize{программа}};
+      \node[right=10mm of src]                 (pad) {};
+      \node[shape=tape,draw,right=10mm of pad] (tgt) {\scriptsize{программа}};
+      \node[above=of pad]                      (com) {\scalebox{0.9}{\scriptsize{компилятор}}};
+      \draw[-stealth] (src) -- (tgt);
+    \end{tikzpicture}
+  \end{figure}
+\end{frame}
+
+\begin{frame}[fragile]{Языки программирования и семантика}
+  \[
+  \begin{array}{rcl}
+    \mathcal L & - & \mbox{язык программирования}\\
+               &   & \mbox{(набор представлений программ)}\\
+    \mathcal D & - & \mbox{семантический домен}\\
+               &   & \mbox{часто: } \mathcal D\times\mathcal D\subseteq \mathcal D,\,\mathcal L\subseteq\mathcal D
+  \end{array}
+  \]
 \end{frame}
 
 \begin{frame}[fragile]{Синтаксис}
@@ -365,82 +368,20 @@ trn/.style={circle, draw, inner sep=5pt, font=\it\scriptsize\sffamily}
 
 \begin{frame}[fragile]{Компилятор \lama}
   \begin{figure}
-    \scalebox{0.8}{ 
-    \begin{tikzpicture}[node distance=5mm]
-      \onslide<2->{   
+    \begin{tikzpicture}
       \node[shape=tape,draw]                                      (source) {\scriptsize{\begin{tabular}{c}
                                                                                            исходная\\
                                                                                            программа
                                                                                         \end{tabular}
       }};
-      \node[shape=rectangle,draw,rounded corners,minimum width=3cm,below=of source] (parser) {\scriptsize{\begin{tabular}{c}
+      \node[shape=rectangle,draw,rounded corners,right=of source] (parser) {\scriptsize{\begin{tabular}{c}
                                                                                            синтаксический\\
                                                                                            анализатор
                                                                                         \end{tabular}
       }};
-      \node[shape=rectangle,draw,minimum width=3cm,below=of parser] (ast) {\scriptsize{\begin{tabular}{c}
-                                                                                           дерево\\
-                                                                                           абстрактного синтаксиса
-                                                                                        \end{tabular}
-      }};
-      \draw[-stealth] (source) -- (parser);
-      \draw[-stealth] (parser) -- (ast);      
-      }
-      \onslide<3->{
-        \node[shape=rectangle,draw,rounded corners,minimum width=3cm,right=2cm of ast] (int) {\scriptsize{интерпретатор}};
-        \draw[-stealth] (ast) -- (int);
-      }
-      \onslide<4->{
-      \node[shape=rectangle,draw,rounded corners,minimum width=3cm,below=of ast] (smc) {\scriptsize{\begin{tabular}{c}
-            компилятор\\
-            стековой машины
-          \end{tabular}
-      }};
-      \node[shape=rectangle,draw,minimum width=3cm,below=of smc] (sm) {\scriptsize{\begin{tabular}{c}
-            код для\\
-            стековой машины
-          \end{tabular}
-      }};
-      \draw[-stealth] (ast) -- (smc);
-      \draw[-stealth] (smc) -- (sm);          
-      }
-      \onslide<5->{
-      \node[shape=rectangle,rounded corners,draw,minimum width=3cm,right=2.5cm of sm] (smi) {\scriptsize{\begin{tabular}{c}
-            интерпретатор\\
-            стековой машины
-          \end{tabular}
-      }};
-      \draw[-stealth] (sm) -- (smi);
-      }
-      \onslide<6->{
-      \node[shape=rectangle,draw,rounded corners,minimum width=3cm,below=of sm] (x86) {\scriptsize{компилятор x86}};
-      \node[shape=tape,draw,below=of x86]                                       (asm) {\scriptsize{\begin{tabular}{c}
-            ассемблерная\\
-            программа
-          \end{tabular}
-      }};
-      \node[shape=rectangle,draw,dashed,rounded corners,right=2.8cm of asm] (gcc) {\scriptsize{\begin{tabular}{c}
-            инфраструктура\\
-            GCC
-          \end{tabular}
-      }};
-      \draw[-stealth] (sm) -- (x86);
-      \draw[-stealth] (x86) -- (asm);
-      \draw[-stealth,dashed] (asm) -- (gcc);    
-      }
-      \onslide<7->{
-      \begin{scope}
-        \node[fit = (parser)(ast)(int),shape=rectangle,draw,dashed,rounded corners] {};
-      \end{scope}
-      \node[shape=rectangle,fill=black,above=of int,yshift=1.1cm,xshift=0.5mm] {\scriptsize{Анализ}};
-      }
-      \onslide<8->{
-      \begin{scope}
-        \node[fit = (sm)(smi)(smc)(x86),shape=rectangle,draw,dashed,rounded corners,xshift=-2.7mm,minimum width=9.4cm] {};
-      \end{scope}
-      \node[shape=rectangle,fill=black,below=of int,yshift=1.2mm] {\scriptsize{Синтез}};
-      }
-    \end{tikzpicture}}
+      \node[shape=rectangle,draw,right=of parser] (ast) {\scriptsize{AST}};
+      \node[shape=rectangle,draw,rounded corners,right=of ast] (int) {\scriptsize{интерпретатор}};
+    \end{tikzpicture}
   \end{figure}
 \end{frame}
 
