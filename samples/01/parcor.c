@@ -1,6 +1,6 @@
 # include <stdio.h>
 
-int d = 0;
+static int d = 0;
 
 int main (int argc, char *argv[]) {
   int x;
