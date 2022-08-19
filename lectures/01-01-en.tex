@@ -295,7 +295,7 @@ x\xrightarrow{\displaystyle{source}}y \Longleftrightarrow x\xrightarrow{\display
 In other words, the behaviour of the source and compiled programs is indistinguishable: on the same input both either
 terminate with the same results, or crash/loop.
 
-Let us have, however, the following simple program:
+Consider, however, the following simple program:
 
 \begin{lstlisting}[language=cc]
    # include <stdio.h>
@@ -321,73 +321,111 @@ it terminates successfully with return code 255! This is because the option ``\t
 does exactly what we envisioned.
 
 Thus, we can see that in practice target programs not always completely equivalent to the source ones: they can deliver some results on inputs, for which the source
-ones loop or crash. This property is called \emph{partial correctness}, and can be formally specified as for arbitrary $x$, $y$, $source$ and $target$
+ones loop or crash. This property is called \emph{partial correctness}, and can be formally specified as follows: for arbitrary input-output values $x$ and $y$, and for
+arbitrary source and target programs $source$ and $target$
 
 \[
 x\xrightarrow{\displaystyle{source}}y \Longrightarrow x\xrightarrow{\displaystyle{target}}y
 \]
 
-This means, that when the source program terminates with a definite result, the target also does so; however, the target one can still deliver some output
+This means, that when the source program terminates with a definite result, the target also does so with the same result; however, the target one can still deliver some output
 values for inputs on which the source program is not defined. In other words, compilers are allowed to \emph{extend the domains} of programs they compile. The
 majority of compilers (and other tools as well) are partially correct.
 
-\section{Архитектура компиляторов}
+\section{Compiler Architecture}
 
-С точки зрения архитектуры компиляторы в целом можно рассматривать как набор просмотров (passes), каждый из которых обрабатывает некоторое
-промежуточное представление программы (intermediate representation). Конкретный набор как просмотров, так и форматов внутреннего представления
-может отличаться от компилятора к компилятору. Среди наиболее употребимых внутренних представлений можно упомянуть абстрактное синтаксическое дерево
-(abstract syntax tree), трехадресный код (three-address code), стековый код (stack machine code), статическую форму единственного присваивания (static
-single assignment form, SSA) и другие. Некоторые из этих представлению будут нами использоваться при построении нашего компилятора, другие мы
-оставим в стороне.
+The majority of real compilers share the same architectural features. They consist of a number of \emph{passes}, each of which
+takes on input and returns as a result a certain \emph{intermediate represetation}, \emph{IR}, (not neccessarily the same) of a program
+being compiled. The concrete set of these passes and concrete forms of intermediate representations vary from a compiler to a compiler,
+but there are still some common representation which can be found throuhout various implementations: \emph{abstract syntax tree},
+\emph{three-address code}, \emph{stack machine code}, \emph{static single assignment} (SSA), etc. Some of these forms of representation
+will be utilized in our compiler, some others will be left out unused.
 
-С точки зрения ассортимента просмотров в компиляторах как правило выделяют анализирующую и синтезирующую части. К анализирующей части относят,
-прежде всего, синтаксический анализ и анализ типов (если в языке они есть). Существуют и другие задачи --- например, разрешение имен, работа с
-областями видимости и т.д. Совокупность анализирующих просмотров часто объединяют понятием ``frontend'' (передняя часть компилятора).
+All the diversity of passes can be subdivided in a few categories.
 
-К синтезирующей части относится деятельность по генерации машинного кода, например, выбор инструкций, распределение решистров, планирование и т.д.
-Синтезирующие просмотры образуют так называемый ``backend'' компилятора, так сказать, его ``заднюю часть''.
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.7]{images/01-06.eps}
+\end{figure}
 
-Кроме этих двух компонент развитые компиляторы содержат набор оптимизирующий преобразований, который принято обозначать термином ``middle-end'',
-так сказать, ``средняя часть'' компилятора. Количество просмотров в middle-end может быть достаточно велико, посколько существует более
-десятка общеупотребимых оптимизирующих преобразований (некоторые указаны на слайде), котороые при компиляции могут повторяться.
-<демонстрация>
+First, the \emph{frontend} of a compiler collects a number of \emph{analyzing} passes: syntax analysis, type inference/checking,
+name resolution, etc.
 
-\section{Компилятор \lama}
+Then, the \emph{backend} of a compiler contains code generation passes: instruction selection, register allocation,
+instruction scheduing, low-level optimizations.
 
-Теперь, когда мы обсудили, как устроены компиляторы вообще, давайте посмотрим, как устроен тот компилятор языка \lama, которым мы будем пользоваться
-и который нам предстоит написать.
+Finally, there can be \emph{middle-end}, which comprised of various machine-independent optimising passes such as
+jump optimizations, dead code elimintation, loop invariant code motion, common subexpression elimination, etc.
 
-Наш компилятор устроен очень просто, горазда проще, чем компилятор GCC, который мы только что рассматривали для примера.
+Most compilers allow to peep on what's going on under the hood. For example, \texttt{GCC} accepts the
+option \texttt{-ftime-report}, which makes it output the time taken by each pass performed. An example
+of such an output is shown below:
 
-Исходный текстовой файл с программой на языке \lama поступает на вход синтаксического анализатора, который строит первое промежуточное
-представление, называемое абстрактным синтаксическим деревом, или деревом абстрактного синтаксиса. Дерево абстрактного синтаксиса
-является важнейшей формой представления программ, которая повсеместно используется не только для трансляции, но и для широкого
-класса других языковых инструментов.
+\begin{scriptsize}
+\begin{verbatim}
+Execution times (seconds)
+ phase setup             :   0.00 ( 0%) usr   0.00 ( 0%) sys   0.00 ( 0%) wall    1179 kB (25%) ggc
+ phase parsing           :   0.03 (33%) usr   0.01 (100%) sys   0.04 (40%) wall    1197 kB (25%) ggc
+ phase opt and generate  :   0.06 (67%) usr   0.00 ( 0%) sys   0.06 (60%) wall    2328 kB (49%) ggc
+ callgraph optimization  :   0.01 (11%) usr   0.00 ( 0%) sys   0.00 ( 0%) wall       0 kB ( 0%) ggc
+ cfg cleanup             :   0.00 ( 0%) usr   0.00 ( 0%) sys   0.01 (10%) wall       0 kB ( 0%) ggc
+ trivially dead code     :   0.00 ( 0%) usr   0.00 ( 0%) sys   0.01 (10%) wall       0 kB ( 0%) ggc
+ df reaching defs        :   0.01 (11%) usr   0.00 ( 0%) sys   0.00 ( 0%) wall       0 kB ( 0%) ggc
+ alias analysis          :   0.01 (11%) usr   0.00 ( 0%) sys   0.00 ( 0%) wall      55 kB ( 1%) ggc
+ preprocessing           :   0.00 ( 0%) usr   0.00 ( 0%) sys   0.01 (10%) wall     345 kB ( 7%) ggc
+ lexical analysis        :   0.03 (33%) usr   0.01 (100%) sys   0.01 (10%) wall       0 kB ( 0%) ggc
+ parser inl. func. body  :   0.00 ( 0%) usr   0.00 ( 0%) sys   0.02 (20%) wall      79 kB ( 2%) ggc
+ dominator optimization  :   0.00 ( 0%) usr   0.00 ( 0%) sys   0.01 (10%) wall      45 kB ( 1%) ggc
+ forward prop            :   0.01 (11%) usr   0.00 ( 0%) sys   0.00 ( 0%) wall      13 kB ( 0%) ggc
+ loop init               :   0.02 (22%) usr   0.00 ( 0%) sys   0.01 (10%) wall     193 kB ( 4%) ggc
+ loop fini               :   0.00 ( 0%) usr   0.00 ( 0%) sys   0.01 (10%) wall       0 kB ( 0%) ggc
+ final                   :   0.00 ( 0%) usr   0.00 ( 0%) sys   0.01 (10%) wall      48 kB ( 1%) ggc
+ TOTAL                 :   0.09             0.01             0.10               4714 kB
+\end{verbatim}
+\end{scriptsize}
 
-Следующей интересной компонентой, которая не всегда присутствует в промышленных компиляторх, является интерпретатор исходного языка.
-Более подробно об интерпретаторах вообще мы поговорим позднее, пока же нам достатчно знать, что интерпретатор исполняет исходную программу,
-в данном случае представленную в виде абстрактного синтаксического дерева, в соответствии с семантикой языка, на котором она написана.
-Наличие интерпретатора в инфраструктуре \lama играет весьма важную как технологическую, так и дидактическую роль. Прежде всего,
-реализация интерпретатора позволяет усвоить тот метод формального описания семантики языка программирования, которым мы будем пользоваться,
-а именно~--- операционную семантику большого шага. Далее, наличие интерпретатора позволяет на ранних стадиях обнаруживать и исправлять
-ошибки в синтаксическом анализаторе. Как мы увидим дальше, реализовать интерпретатор~--- относительно простая задача, и возможность
-выполнить программу на ранних стадиях трансляции оказывается весьма полезной.
+\section{The \lama Compiler}
 
-Следующей компонентой нашего компилятора является компилятор дерева абстрактного синтаксиса в код для стековой машины.
-Эта машина напоминает упрощенную модель настоящего аппаратного процессора, поэтому, с одной стороны, для того, чтобы
-сгенерировать код для этой машины, нужно решить похожие задачи, а с другой --- эти задачи решаются немного проще, чем
-для настоящего процессора. Сгенерированный код для стековой машины можно исполнить на интерпретаторе стековой машины.
-Так же как и в случае интепретатора исходного языка, возможность исполнить стековый код позволяет изолированно
-отлаживать стековый компилятор.
+Now, when we discussed a little bit how compilers work, let's have a look at \lama compiler, which will be our main
+tool throuhgout the course, and which we will be implementing.
 
-Наконец, последней компонентой является собственно компилятор для x86, который преобразует стековый код в
-программу на языке целевого ассемблера. После того, как эта программа порождена, она поступает на
-вход инфраструктуре GCC, где проходит все остальные необходимые этапы до получения исполняемого модуля.
+The \lama compiler is organized much simpler than the majority of industrial-tier compilers like \texttt{GCC}, which we already
+mentioned multiple times (see Fig.~\ref{lama-comp}).
 
-<демонстрация>
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.7]{images/01-07.eps}
+  \caption{The Structure of \lama Compiler}
+  \label{lama-comp}
+\end{figure}
 
-Таким образом, с точки зрения архитектуры, синтаксический анализатор относится к стадии анализа, а компиляторы
-стековой машины и x86 --- к стадии синтеза.
+
+The source file with a \lama program is parsed by a syntax analyser which converts it into an
+abstract syntax tree, or AST. AST is one of the most important program representations, and its use in compilers and other
+tools is ubiquitious.
+
+The next component, which is rarely implemented in real-world compilers, is a source-level \emph{interpreter}. We
+consider this object in details later, for now it is sufficient to know that interpreter is a component which
+directly runs a program in some representation~--- in our case, in the form of AST,~--- according to the semantics of the language. 
+The presence of interpreter plays an important role from both educational and technological standpoints. First,
+the implementation of interpreter facilitates the internalization of formal semantics description method which
+we use, namely~--- big-step operational semantics. Next, it allows to find and eiminate some errors 
+at early stage. The implementation of interpreter is rather a simple task, and it is advantageous to be capable of running program
+at early stages of compiler implementation.
+
+Then, there is a compiler of AST into \emph{stack machine} code. This machine resembles a simplified model of
+actual hardware processor; thus, on one hand, to generate stack machine code a similar set of tasks has to be
+solved; on the other, these solutions are a bit simpler than for an actual hardware. Generated stack machine
+code can then be run on the \emph{stack machine interpreter}. Similarly to source-level interpreter case,
+the capability to run stack machine code makes it possible to develop and debug stack machine compiler
+in isolation.
+
+Finally, the last component of the compiler is code generator for \texttt{x86} processor which
+transforms stack machine code into \texttt{x86} assembler program; this program is then passed to
+the \textsc{GCC} infrastructure to be finally transformed into an object module.
+
+Thus, from the architectural point of view, syntax analyser constitutes a fronted, while compilers for
+stack machine and \texttt{x86}~--- a backend.
 
 \end{document}
 
