@@ -31,6 +31,8 @@
 \usepackage{mathtools}
 \usepackage{transparent}
 \usepackage{bold-extra}
+\usepackage{subcaption}
+\usepackage{placeins}
 
 \newcommand{\sembr}[1]{\llbracket{#1}\rrbracket}
 \newcommand{\primi}[1]{\mathbf{#1}}
@@ -40,11 +42,51 @@
 \newcommand{\lama}{$\lambda\kern -.1667em\lower -.5ex\hbox{$a$}\kern -.1000em\lower .2ex\hbox{$\mathcal M$}\kern -.1000em\lower -.5ex\hbox{$a$}$\xspace}
 \sloppy
 
+\newcommand{\lang}[1]{\textsc{#1}}
+\newcommand{\sys}[1]{\textsc{#1}}
+\newcommand{\proc}[1]{\textbf{#1}}
+\newcommand{\prog}[1]{\textbf{#1}}
+
 \lstdefinelanguage{cc}{
 basicstyle=\ttfamily\small,
 keywords={include,int,char,float,double,long,short,void,static,volatile,auto,const,return,if,while,else},
 keywordstyle=\rmfamily\bfseries,
 sensitive=true,
+}
+
+
+\lstdefinelanguage{lama}{
+keywords={ignore, ref, read, write, for, true, false, fun, case, of, esac, let, in, eta, skip, import, public, infix, infixl, infixr, at, before, after, syntax, var, val, if, then, else, elif, fi, do, while, od},
+sensitive=true,
+commentstyle=\small\itshape\ttfamily,
+keywordstyle=\textbf,%\ttfamily\underline,
+identifierstyle=\ttfamily,
+basewidth={0.5em,0.5em},
+columns=fixed,
+mathescape=false,
+fontadjust=true,
+literate={->}{{$\to$}}3{=>}{{$\Rightarrow$}}3{=>>}{{$\Rightarrow$\hspace{-0.7em}$\Rightarrow$}}3,
+morecomment=[s]{(*}{*)},
+basicstyle=\normalsize
+}
+
+\lstdefinelanguage{plain}{
+keywords={},
+sensitive=true,
+commentstyle=\small\itshape\ttfamily,
+keywordstyle=\textbf,%\ttfamily\underline,
+identifierstyle=\ttfamily,
+basewidth={0.5em,0.5em},
+columns=fixed,
+mathescape=false,
+fontadjust=true,
+literate={->}{{$\to$}}3{=>}{{$\Rightarrow$}}3{=>>}{{$\Rightarrow$\hspace{-0.7em}$\Rightarrow$}}3,
+morecomment=[s]{(*}{*)},
+basicstyle=\normalsize
+}
+
+\lstset{
+language=lama
 }
 
 \begin{document}
@@ -80,7 +122,7 @@ Similarly to natural languages, the syntax of a programming language can be deco
 unlike natural languages, which have been evolving more or less spontaneously, the syntax for a programming language is intelligently designed taking
 into account a number of specific requirements; in particular, it is (as a rule) \emph{unabiguous} and allows for efficient analysis.
 
-To illustrate the concept of programming language syntax consider the following simple snippet in \textsc{C}:
+To illustrate the concept of programming language syntax consider the following simple snippet in \lang{C}:
 
 \begin{figure}[h]
   \centering
@@ -156,7 +198,7 @@ in a semantics-preserving manner.
 
 Finally, for a compiler there is nothing ``weird'' in those code samples. The reason is simple: compilers do not have intuition. They just 
 routinely convert program texts into executables no matter how weird they would look from a human being point of view. To illustrate this,
-consider the following short program in \textsc{C}: 
+consider the following short program in \lang{C}: 
 
 \begin{lstlisting}[language=cc]
 m(f,a,s)char*s;
@@ -179,7 +221,7 @@ main(){return m(0,75,"mIWltouQJGsBniKYvTxODAfbUcFzSp"
 "MwNCHEgrdLaPkyVRjXeqZh");}
 \end{lstlisting}
 
-If you have any doubts if this is a valid \textsc{C} program, compile and run it. \textsc{C} is never considered as particularly hard to
+If you have any doubts if this is a valid \lang{C} program, compile and run it. \lang{C} is never considered as particularly hard to
 understand or syntactically challenging (both arguable), yet the program presented is totally incomprehendible. Actually, it
 was specifically designed to be such: there is a whole competition in writing \emph{obfuscated}
 code\footnote{https://www.cise.ufl.edu/$\tilde\,$manuel/obfuscate/obfuscate.html}. For us, however, the important observation is that this
@@ -211,8 +253,8 @@ about compilation, we actually deal with \emph{three} languages:
 \section{Translation Subspecies}
 
 As you probably know, there is a subdivision of languages into high- and low-level. This subdivision is not absolute: for example,
-\textsc{Haskell} is considered by many as more high-level language than \textsc{C}, which, in turn, is of higher level then \textsc{Fortran}, etc.
-As a rule, high-level languages are equipped with type systems, while low-level are not (but \textsc{Scheme} is untyped while there 
+\lang{Haskell} is considered by many as more high-level language than \lang{C}, which, in turn, is of higher level then \lang{Fortran}, etc.
+As a rule, high-level languages are equipped with type systems, while low-level are not (but \lang{Scheme} is untyped while there 
 exist typed assemblers). This coarse-grained classification of languages leads to a corresponding coarse-grained classification of
 translators:
 
@@ -226,10 +268,17 @@ we generally agree, it's worth mentioning that the other kinds of translators ar
 it is expeccted from a decompiler or convertor to properly utilize the abstractions of the target language, to produce a
 human-readable maintanable results, etc.
 
-\section{Environments and Cross-Compilation}
+\section{Environments, Runtime Support and Cross-Compilation}
 
 Programs are rarely work in isolation; as a rule they rely on a certain environment: operation system, system- and user-level
-libraries, etc. Since compiler is a program itself, it also requires a certain environment, called \emph{compilation environment}.
+libraries, etc. An important component of this environment is a \emph{runtime support library}. This library contains
+an implementation of certain programming language constructs which are more beneficient to implement as a
+library then to built in a compiler itself, for example, memory managements and synchronization primitives, etc. The
+invocation of these primitives is generated by a compiler; as a rule, they can not be accessed from programs on the user level.
+In contrast, \emph{standard library} contains an initial implementation of useful data structures and functions
+in terms of the source programming language, for example, input-output functions, standard data types, collection implementations, etc.
+
+Since compiler is a program itself, it also requires a certain environment, called \emph{compilation environment}.
 On the other hand, the environment for which compiler generates its output is called \emph{target environment}. Usually that two
 coinside~--- for example, out \lama compiler works under Linux on x86 processor, and generates programs which work
 under Linux on x86.
@@ -255,12 +304,12 @@ boots.
 
 The bootstrapping of a compiler for a new language (for which no compiler yet exists) is compised of its implementation
 in some other language and then rewriting it in this new language using just written compiler. For example, in such a way the \lama compiler was
-acquired (\textbf{not really yet}): initially it was implemented in \textsc{OCaml} and then reimplemented in
+acquired (\textbf{not really yet}): initially it was implemented in \lang{OCaml} and then reimplemented in
 \lama itself.
 
 If some compiler for the language of interest already exists, but works on some other platform, then it is possible for
 implement a \emph{cross-compiler} which works on that platform but generates code for the platform of interest. Then
-this compiler can be compiled by itself~--- this is the conventional way, for example, to port \textsc{GCC} compilers
+this compiler can be compiled by itself~--- this is the conventional way, for example, to port \sys{GCC} compilers
 to other platforms.
 
 Finally, if nothing useful exists beside the assembler for the platform of interest, then this assembler itself can be
@@ -335,7 +384,7 @@ majority of compilers (and other tools as well) are partially correct.
 \section{Compiler Architecture}
 
 The majority of real compilers share the same architectural features. They consist of a number of \emph{passes}, each of which
-takes on input and returns as a result a certain \emph{intermediate represetation}, \emph{IR}, (not neccessarily the same) of a program
+takes as input and returns as a result a certain \emph{intermediate represetation}, \emph{IR}, (not neccessarily the same) of a program
 being compiled. The concrete set of these passes and concrete forms of intermediate representations vary from a compiler to a compiler,
 but there are still some common representation which can be found throuhout various implementations: \emph{abstract syntax tree},
 \emph{three-address code}, \emph{stack machine code}, \emph{static single assignment} (SSA), etc. Some of these forms of representation
@@ -384,6 +433,43 @@ Execution times (seconds)
 \end{verbatim}
 \end{scriptsize}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.7]{images/01-09.eps}
+  \caption{Toolchain}
+  \label{toolchain}
+\end{figure}
+\FloatBarrier
+
+\section{Beyond Compilers}
+
+While compilers, indeed, transform source programs to machine code, the code they output, as a rule, cannot be directly run on hardware.
+The reason is that it still contains certain abstractions the hardware cannot deal with. In particular, compilers usually generate
+assembler code with \emph{symbolic names}. This approach plays an important role in supporting \emph{separate compilation}~--- a
+feature which allows to combine programs from a number of precompiled modules. The majority of application programs
+make use of various libraries; as a rule, the source code of these libraries is not compiled alongside with the application itself, but
+\emph{linked} at post-compilation time, thus greatly reducing the time required for build. To make it possible, compilers
+produce not ready-to-run binary code, but so-called \emph{object files} which, besides machine code, contain supplementary
+\emph{metadata} to make linking possible. Thus, on the way to the real executable binary the output which compilers provide
+is transformed again a number of times.
+
+In the most general case, the compiler generates a textual assembler program. Then the following tools can be used:
+
+\begin{itemize}
+\item \emph{assembler} which reads assembler programs and outputs object files;
+\item \emph{archiever/librarian} which combines multiple object files into one archive/library file;
+\item \emph{linker} which combines multiple object and library files into one executable.
+\end{itemize}
+
+These tools together with a compiler form so-called \emph{toolchain} (Fig.~\ref{toolchain}). When a new processor comes to market it is expected from
+the vendor to supply a conventional toolchain for the developers. In \sys{Unix}-like systems the conventional
+toolchain consists of separate programs \prog{cpp} (\lang{C} preprocessor), \prog{cc} (\lang{C} compiler),
+\prog{as} (assembler), \prog{ld} (linker) and \prog{ar} (archiever). \sys{GCC} compiler implements only two first
+of these components~--- \prog{cpp} and \prog{cc},~--- and invokes others to complete the compilation process
+depending on what options were specified by users. The top-level program \prog{gcc} itself is just a \emph{driver}
+which controls the execution of other tools of the toolchain. 
+
+
 \section{The \lama Compiler}
 
 Now, when we discussed a little bit how compilers work, let's have a look at \lama compiler, which will be our main
@@ -399,10 +485,19 @@ mentioned multiple times (see Fig.~\ref{lama-comp}).
   \label{lama-comp}
 \end{figure}
 
-
 The source file with a \lama program is parsed by a syntax analyser which converts it into an
-abstract syntax tree, or AST. AST is one of the most important program representations, and its use in compilers and other
-tools is ubiquitious.
+abstract syntax tree, or AST. An example of a program and its AST (actually, an \emph{HTML-rendering}
+of its AST) is shown below:
+
+\begin{tabular}{m{5cm}m{5cm}}
+  \begin{lstlisting}[basicstyle=\small]
+ printf ("Hello, world!\n")
+  \end{lstlisting} &
+  \includegraphics[scale=0.55]{images/01-08.eps}
+\end{tabular}
+
+AST is one of the most important program representations, and its use in compilers and other
+tools is ubiquitious. 
 
 The next component, which is rarely implemented in real-world compilers, is a source-level \emph{interpreter}. We
 consider this object in details later, for now it is sufficient to know that interpreter is a component which
@@ -415,14 +510,51 @@ at early stages of compiler implementation.
 
 Then, there is a compiler of AST into \emph{stack machine} code. This machine resembles a simplified model of
 actual hardware processor; thus, on one hand, to generate stack machine code a similar set of tasks has to be
-solved; on the other, these solutions are a bit simpler than for an actual hardware. Generated stack machine
-code can then be run on the \emph{stack machine interpreter}. Similarly to source-level interpreter case,
-the capability to run stack machine code makes it possible to develop and debug stack machine compiler
-in isolation.
+solved; on the other, these solutions are a bit simpler than for an actual hardware. For our example
+program the corresponding stack machine code looks like
+
+\begin{lstlisting}[language=plain,basicstyle=\small]
+    LABEL ("main")
+    BEGIN ("main", 2, 0, [], [], [])
+    STRING ("Hello, world!\\n")
+    CALL ("Lprintf", 1, false)
+    END      
+\end{lstlisting}
+
+Generated stack machine code can then be run on the \emph{stack machine interpreter}. Similarly to source-level
+interpreter case, the capability to run stack machine code makes it possible to develop and debug stack
+machine compiler in isolation.
 
 Finally, the last component of the compiler is code generator for \texttt{x86} processor which
 transforms stack machine code into \texttt{x86} assembler program; this program is then passed to
-the \textsc{GCC} infrastructure to be finally transformed into an object module.
+the \textsc{GCC} infrastructure to be finally transformed into an object module. An example of
+\texttt{x86} assembler listing for our example program is shown below:
+
+\begin{lstlisting}[language=plain,basicstyle=\small]
+             .globl	main
+             .data
+    string_0:.string "Hello, world!\n"
+    main:
+    # BEGIN ("main", 2, 0, [], [], []) / 
+    # STRING ("Hello, world!\\n") / 
+             movl	$string_0,	%ebx
+	     pushl	%ebx
+	     call	Bstring
+	     addl	$4,	%esp
+	     movl	%eax,	%ebx
+    # CALL ("Lprintf", 1, false) / 
+	     pushl	%ebx
+	     call	Lprintf
+	     addl	$4,	%esp
+	     movl	%eax,	%ebx
+    # END / 
+	     movl	%ebx,	%eax
+    Lmain_epilogue:
+             movl	%ebp,	%esp
+	     popl	%ebp
+	     xorl	%eax,	%eax
+	     ret
+\end{lstlisting}
 
 Thus, from the architectural point of view, syntax analyser constitutes a fronted, while compilers for
 stack machine and \texttt{x86}~--- a backend.
