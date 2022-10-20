@@ -4,7 +4,7 @@ In this chapter we introduce the language of \emph{straight line} programs which
 non-trivial subset of \lama. In this subset all programs are executed sequentially statement by statement with
 no branching. Thus, any program either comes to an end or stops due to an error, but cannot loop forever. We
 use this simple language to showcase all the ingredients of our approach to language description: abstract and
-concrete syntax specification, denotational and operational semantics, etc. We also introduce the some components of
+concrete syntax specification, denotational and operational semantics, etc. We also introduce some components of
 the compiler we will be working on: source-level interpreter, stack machine compiler and interpreter, and
 \texttt{x86} code generator.
 
@@ -65,7 +65,7 @@ put \emph{after} the operands they connect. In what follows we will stick with i
 Now we need to define the semantic domain for the semantics of expressions. We already hinted that this domain should be shaped like a set of some
 data processing functions $\mathfrak{D}\to\mathfrak{D}$; however, we need to be more specific.
 
-As we deal with arithmetic expressions it is rather natural to stipulate that the results of their evaluation are interger values, i.e. $\mathbb{Z}$ (as we agreed
+As we deal with arithmetic expressions it is rather natural to expect that the results of their evaluation are interger values, i.e. $\mathbb{Z}$ (as we agreed
 earlier, we assume $\mathbb{Z}\subset\mathfrak{D}$); on the other hand, the value of an expression depends on the values of variables it contains. We can
 encode these values as a \emph{state}~--- a function which maps variables to integer values:
 
@@ -73,7 +73,7 @@ encode these values as a \emph{state}~--- a function which maps variables to int
 St : \mathscr{X} \to \mathbb{Z}
 \]
 
-There is nothing wrong with assuming $St\subset\mathfrak{D}$: as any expression can contain only finite number of variables we are interested only in
+There is nothing wrong with assuming $St\subset\mathfrak{D}$: as any expression can contain only a finite number of variables we are interested only in
 states with finite domains which can be encoded, for example, as finite lists of pairs. Thus, finally, we have the following ``type'' for the semantics
 of expressions:
 
@@ -89,8 +89,6 @@ looks simple and natural; however, for more advanced languages more advanced mat
 as a rule, denotational semantics gives us a very abstract, high-level view on the behavior of programs, which may or may not be desirable from a
 practical standpoint.
 
-The denotational semantics for expressions is shown in Fig.~\ref{se-denot}.
-
 
 \begin{figure}[t]
 \[
@@ -104,12 +102,15 @@ The denotational semantics for expressions is shown in Fig.~\ref{se-denot}.
 \label{se-denot}
 \end{figure}
 
+
+The denotational semantics for expressions is shown in Fig.~\ref{se-denot}.
 We give here three equations, one for each syntactic form. In the right-hand side of each equation we immediately
 give the object (a function from states to integers) which corresponds to the semantics of the expression in the
 left-hand side. The notation $\star \mapsto \bullet$ is used to denote a function from $\star$ to $\bullet$; we refrain from
-using the lambda notation since these functions belong to the meta-level, not to the object one.
+using the lambda notation since these functions are elements of the \emph{meta-language} (the language we use to describe the
+semantics), not of the \emph{object} one (the language which semantics is being described).
 
-In the first equation, when the expression is a natural number $z$, its semantics is a constaint function, which for
+In the first equation, when the expression is a natural number $z$, its semantics is a constant function, which for
 any state $\sigma$ return just this number $z$.
 
 When the expression in question is a variable $x$, its semantics is a function which, given a state $\sigma$, returns
@@ -139,9 +140,13 @@ The correspondence between $\otimes$ and $\oplus$ is described by the following 
 \end{tabular}
 \end{center}
 
+Here we use built-in \lama binary operators to specify the semantics of $\oplus$; this approach is good enough for now since owr primary objective is
+to implement a reference interpreter in \lama. Later, when we will deal with \texttt{x86} codegenerator we will refine the understanding of
+these operators' semantics.
+
 Note, while the symbols in the first and second columns look similar, they actually have different nature: the left ones are
 elements of syntax while the right ones~--- conventional denotations for familiar arithmetic operators.
-The last equation, thus, is actually a generic one which denotes three concrete equations in which $\otimes$ and $\oplus$ are
+The last equation in Fig.~\ref{se-denot}, thus, is actually a generic one which denotes \emph{thirteen} concrete equations in which $\otimes$ and $\oplus$ are
 substituted coherently according to the table given above.
 
 We can make two important observations.
@@ -170,7 +175,7 @@ semantic specification.
 
 When a semantic is compositional, a certain proof principle~--- \emph{structural induction}~--- can be used to establish
 its properties. This technique is essentially a specific kind of mathematical induction applied to \emph{finite trees} rather than to
-natural numbers. To prove by structural induction that some property holds for all trees on needs to prove, first, that this
+natural numbers. To prove by structural induction that some property holds for all trees one needs to prove, first, that this
 property holds for all leaves (\emph{base of induction}); then, assuming that the property holds for all trees up to a certain
 height (\emph{induction hypothesis}) one needs to prove that the property holds for all trees one level higher. We demonstrate
 the application of this principle by the following example.
@@ -225,8 +230,8 @@ closure. For example, for the expression $(x+2)*y$ all its subexpression are $(x
 
   \[
   \begin{array}{rcl}
-    \sembr{e_1}^\ph_\mathscr{E}&=&x_1\\
-    \sembr{e_2}^\ph_\mathscr{E}&=&x_2
+    \sembr{e_1}^\ph_\mathscr{E}\,\sigma&=&x_1\\
+    \sembr{e_2}^\ph_\mathscr{E}\,\sigma&=&x_2
   \end{array}
   \]
 
@@ -235,4 +240,33 @@ closure. For example, for the expression $(x+2)*y$ all its subexpression are $(x
   both $e_1$ and $e_2$ have some values being evaluated in the state $\sigma$.
 \end{proof}
 
-The strictness property, in particular, means that 
+The strictness property, in particular, means that if variable $x$ is undefined in some state $\sigma$, then
+any expression $e$, containing $x$, is also undefined in $\sigma$. Indeed, if $x$ occurs in $e$, then, naturally,
+$x\preceq e$. If $\sigma\,x$ undefined but $\sembr{e}^\ph_\mathscr{E}\,\sigma$ not, this would contradict
+the lemma we've just proven.
+
+Now we can give a precise answer to the questions asked in section~\ref{intro-semantics}.
+The first question was if the expression \lstinline|0*(x/0)| evaluates to zero or crushes. Due to the strictness of our semantics it is undefined in
+any state. Indeed
+
+\[
+\mbox{\lstinline|x/0|}\preceq \mbox{\lstinline|0*(x/0)|}
+\]
+
+and $\sembr{\mbox{\lstinline|x/0|}}^\ph_\mathscr{E}\,\sigma$ is
+undefined for any state $\sigma$ since either \lstinline[mathescape=true]|$\sigma\,$x| is undefined or
+\lstinline[mathescape=true]|$\sigma\,$x| is defined but \lstinline[mathescape=true]|$\sigma\,$x / 0| is
+undefined due to the division by zero.
+
+The second question was if \lstinline|1+x-x| is equivalent to \lstinline|1|. Again, by the strictness and the
+fact that $\mbox{\lstinline|x|}\preceq\mbox{\lstinline|1+x-x|}$ we immediately have that for the \emph{empty state}
+$\Lambda$, undefined for every variable $x$, $\sembr{1}^\ph_\mathscr{E}\,\Lambda=1$ but $\sembr{\mbox{\lstinline|1+x-x|}}^\ph_\mathscr{E}\,\Lambda$ is undefined.
+Thus, these two expressions are not equivalent.
+
+We stress that these answers are specific to the concrete semantics of expressions we described; for different semantics the answers can be different.
+
+
+
+
+
+
