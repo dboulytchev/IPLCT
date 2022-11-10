@@ -1,4 +1,4 @@
-\chapter{The Language of Straight Line Programs}
+\chapter{Straight Line Programs}
 
 In this chapter we introduce the language of \emph{straight line} programs which can be considered as a smallest
 non-trivial subset of \lama. In this subset all programs are executed sequentially statement by statement with
@@ -81,7 +81,7 @@ of expressions:
 \sembr{\bullet}^\ph_\mathscr{E}:\mathscr{E}\to(St\to\mathbb{Z})
 \]
 
-\section{Denotational Semantics of Expressions}
+\subsection{Denotational Semantics}
 
 There are multiple ways to give the semantics for a language formally. Here we use so-called \emph{denotational} way in which it is immediately
 specified what object from the semantic domain corresponds to a given language construct. For this concrete language denotational semantics
@@ -140,7 +140,7 @@ The correspondence between $\otimes$ and $\oplus$ is described by the following 
 \end{tabular}
 \end{center}
 
-Here we use built-in \lama binary operators to specify the semantics of $\oplus$; this approach is good enough for now since owr primary objective is
+Here we use built-in \lama binary operators to specify the semantics of $\oplus$; this approach is good enough for now since our primary objective is
 to implement a reference interpreter in \lama. Later, when we will deal with \texttt{x86} codegenerator we will refine the understanding of
 these operators' semantics.
 
@@ -179,6 +179,8 @@ natural numbers. To prove by structural induction that some property holds for a
 property holds for all leaves (\emph{base of induction}); then, assuming that the property holds for all trees up to a certain
 height (\emph{induction hypothesis}) one needs to prove that the property holds for all trees one level higher. We demonstrate
 the application of this principle by the following example.
+
+\subsection{Strictness}
 
 We are going to prove the \emph{strictness} property of given semantics. It informally means that in order to calculate the
 value for the whole expression one needs to calculate the values for all its subexpressions. First, we define the
@@ -245,8 +247,8 @@ any expression $e$, containing $x$, is also undefined in $\sigma$. Indeed, if $x
 $x\preceq e$. If $\sigma\,x$ undefined but $\sembr{e}^\ph_\mathscr{E}\,\sigma$ not, this would contradict
 the lemma we've just proven.
 
-Now we can give a precise answer to the questions asked in section~\ref{intro-semantics}.
-The first question was if the expression \lstinline|0*(x/0)| evaluates to zero or crushes. Due to the strictness of our semantics it is undefined in
+Now we can give precise answers to the questions asked in section~\ref{intro-semantics}.
+The first question was if the expression \lstinline|0*(x/0)| evaluates to zero or undefined. Due to the strictness of our semantics it is undefined in
 any state. Indeed
 
 \[
@@ -264,6 +266,128 @@ $\Lambda$, undefined for every variable $x$, $\sembr{1}^\ph_\mathscr{E}\,\Lambda
 Thus, these two expressions are not equivalent.
 
 We stress that these answers are specific to the concrete semantics of expressions we described; for different semantics the answers can be different.
+
+\section{Statements}
+
+The other syntactic category of the straight line programs language is \emph{statements}. Its abstract syntax is given by the following
+description:
+
+\[
+\renewcommand{\arraystretch}{1}
+\begin{array}{rcl}  
+  \mathscr S & = & \mbox{\lstinline|skip|} \\
+             &   & \mathscr X \mbox{\lstinline|:=|} \;\mathscr E \\
+             &   & \mbox{\lstinline|read (|} \mathscr X \mbox{\lstinline|)|} \\
+             &   & \mbox{\lstinline|write (|} \mathscr E \mbox{\lstinline|)|} \\
+             &   & \mathscr S \mbox{\lstinline|;|} \mathscr S
+\end{array}
+\]
+
+Here $\mathscr E$ and $\mathscr X$ stand for the sets of expressions and variables, as in the previous section. The first four lines of abstract
+syntax description define four \emph{primitive} statements: empty, assignment, input and output respectively. The fifth one makes it possible to
+combine primitive statements info compositions. The order and subordination of composition counterparts strictly speaking is essential, thus
+
+\begin{lstlisting}
+   read (x); {y := x+4; write (y)}
+\end{lstlisting}
+
+and
+
+\begin{lstlisting}
+   {read (x); y := x+4}; write (y)
+\end{lstlisting}
+
+are different statements; we use here curved brackets ``\lstinline|{|'' and ``\lstinline|}|'' as elements of concrete syntax to reflect the
+grouping of subtrees in abstract syntax tree.
+
+\subsection{Big-Step Operational Semantics}
+
+Our next step is to define the semantics for statements. We could use the denotational style as we did for expression, and it would work
+just fine. However, as our language starts to evolve, the denotational style will be harder to use according to our intentions; in addition
+studying yet another way for semantics' specification would make us more versatile.
+
+The technique we are going to use is called \emph{big-step operational semantics}. Unlike denotational case, where a semantic object
+is immediately given for each syntactic form, operational style involves the construction of intermediate \emph{evaluation relation}.
+But first, as always, we need to specify the semantic domain for statements' semantics.
+
+%  The form of this relation description is borrowed from mathematical logic's natural deduction approach.
+
+From the syntactic form of statements it should be clear that we are dealing with a language with \emph{side effects}: there are read and
+write statements, which, presumably, deal with some outer world, and assignment, which, presumably, changes the values of variables. From
+the semantics of expressions we already know the notion of state, and we already know how to calculate the values of expressions in
+given states. Thus, each statement modifies an \emph{enriched} state which consists of regular state and the outer world. We call this
+enriched state \emph{configuration}. Thus, the set of all configuration is defined as
+
+\[
+\begin{array}{rcl}
+  \mathscr C &=& St \times \mathscr W\\
+  \mathscr W &=& \mathbb Z^* \times \mathbb Z^*
+\end{array}
+\]
+
+where $\mathscr W$~--- a set of \emph{worlds}, each of which escapsulates some input-output stream pair. For
+simplicity, we define the following operations for worlds:
+
+\[
+\begin{array}{rcl}
+  \primi{read}{\inbr{xi,\,o}}    & = & \inbr{x,\,\inbr{i,\,o}}\\
+  \primi{write}{x\,\inbr{i,\,o}} & = & \inbr{i,\,ox}\\
+  \primi{out}{\inbr{i,\,o}}      & = & o
+\end{array}
+\]
+
+
+Again, we define the semantics for this language 
+
+\[
+\sembr{\bullet}_{\mathscr S} : \mathscr S \mapsto \mathbb Z^* \to \mathbb Z^*
+\]
+
+with the semantic domain of partial functions from integer streams to integer streams. Again, we will
+use \emph{big-step operational semantics}: we define a ternary relation ``$\Rightarrow_{\mathscr S}$''
+
+\[
+\Rightarrow_{\mathscr S} \subseteq \mathscr C \times \mathscr S \times \mathscr C
+\]
+
+where $\mathscr C$~--- a set of possible \emph{configurations} during a program execution.
+We will write $c_1\xRightarrow{S}_{\mathscr S}c_2$ instead of $(c_1, S, c_2)\in\Rightarrow_{\mathscr S}$ and informally
+interpret the former as ``the execution of a statement $S$ in a configuration $c_1$ completes with the configuration
+$c_2$''.
+
+The relation ``$\Rightarrow_{\mathscr S}$'' is defined by the following deductive system (see Fig.~\ref{bs_stmt}). The first
+three rules are \emph{axioms} as they do not have any premises. Note, according to these rules sometimes a program
+cannot do a step in a given configuration: a value of an expression can be undefined in a given state in rules
+$\rulename{Assign}$ and $\rulename{Write}$, and there can be no input value in rule $\rulename{Read}$. This style of
+a semantics description is called big-step operational semantics, since the results of a computation are
+immediately observable at the right hand side of ``$\Rightarrow$'' and, thus, the computation is performed in
+a single ``big'' step. And, again, this style of a semantic description can be used to easily implement a
+reference interpreter.
+
+With the relation ``$\Rightarrow_{\mathscr S}$'' defined we can abbreviate the ``surface'' semantics for the language of statements:
+
+\setarrow{\xRightarrow}
+\setsubarrow{_{\mathscr S}}
+\[
+\trule{\trans{\inbr{\Lambda,\,\inbr{i,\,\epsilon}}}{S}{\inbr{\sigma,\,\omega}}}
+      {\sembr{S}_{\mathscr S}i=\primi{out}{\omega}}
+\]
+
+
+\begin{figure}[t]
+\arraycolsep=10pt
+\[\trans{c}{\llang{skip}}{c}\ruleno{Skip}\]
+\[\trans{\inbr{\sigma,\, \omega}}{\llang{x := $\;\;e$}}{\inbr{\sigma\,[x\gets\sembr{e}_{\mathscr E}\;\sigma],\,\omega}}\ruleno{Assign}\]
+\[\trule{\inbr{z,\,\omega^\prime}=\primi{read}{\omega}}
+        {\trans{\inbr{\sigma,\, \omega}}{\llang{read ($x$)}}{\inbr{\sigma\,[x\gets z],\,\omega^\prime}}}\ruleno{Read}\]
+\[\trans{\inbr{\sigma,\, \omega}}{\llang{write ($e$)}}{\inbr{\sigma,\, \primi{write}{(\sembr{e}_{\mathscr E}\;\sigma)\, \omega}}}\ruleno{Write}\]
+\[\trule{\begin{array}{cc}
+            \trans{c_1}{S_1}{c^\prime} & \trans{c^\prime}{S_2}{c_2}
+         \end{array}}
+        {\trans{c_1}{S_1\llang{;}S_2}{c_2}}\ruleno{Seq}\]
+\caption{Big-step operational semantics for statements}
+\label{bs_stmt}
+\end{figure}
 
 
 
