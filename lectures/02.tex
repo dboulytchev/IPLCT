@@ -2,7 +2,7 @@
 
 In this section we set the foundations for formal semantics which will be used in the rest of the course. We also discuss the
 relation between programs and their representation in a concrete data domain, introduce the notion of interpreter and
-consider some sample languages, their semantics and techniques for interpreter inplementations.
+consider some sample languages, their semantics and techniques for interpreter implementations.
 
 \section{Languages and Semantics}
 
@@ -33,7 +33,7 @@ its semantics is just a
 
 When the language is easily deducible from the context we will omit the subscript and write simply $\sembr{\bullet}$.
 
-By claiming the totality of $\sembr{\bullet}$ we 
+By claiming the totality of $\sembr{\bullet}$ we
 make sure that any program has some semantics. The nature of semantic domain $\mathcal D$ essentially defines the nature of $\sembr{\bullet}_{\mathcal L}$;
 for example, we can set
 
@@ -95,7 +95,7 @@ of all programs in $\mathcal{L}$:
 We agreed above to consider programming languages as sets of programs; we could, equivalently, consider them as sets of \emph{representations} of
 programs in some universal data domain. Since the correspondence between programs and their representations is one-to-one this convention would
 not hinder any follow-up reasonings. From now on we will not distinguish programs (abstract objects) from their representations (concrete objects)
-in $\mathfrak{D}$. Note, there can be miltiple representations within one data domain, but all of them are ``equivalent'' in the sense that
+in $\mathfrak{D}$. Note, there can be multiple representations within one data domain, but all of them are ``equivalent'' in the sense that
 each pair of them admits an unambiguous conversions in both directions.
 
 \section{Semantic Properties}
@@ -115,9 +115,9 @@ with the \emph{same} semantic domain. We say that these semantics are \emph{equi
 \sembr{\primi{p}}^\ph=\sembr{\primi{p}}^\prime
 \]
 
-In other words, equivalent semantics assign to each program in the language the same element of semantic domain. A question might arise why whould we
+In other words, equivalent semantics assign to each program in the language the same element of semantic domain. A question might arise why would we
 need two equivalent semantics; wouldn't the single one be sufficient? The answer is that there are multiple ways of
-describing semantics, and these different ways have different properties which make them preferrable in different settings. Sometimes it is desirable to
+describing semantics, and these different ways have different properties which make them preferable in different settings. Sometimes it is desirable to
 reformulate the semantics in different terms. By proving the equivalence between the two we can justify that we still deal with the language with the same
 semantic properties.
 
@@ -162,7 +162,7 @@ for all programs $\primi{p}$ and all $x, y\in\mathfrak{D}$
 
 The difference between correctness and partial correctness is that in the former case the programs are defined for exactly the same inputs,
 while in the latter the transformed program can be defined even if the original one in not. To some extent this is how
-optimizing transformations work, as we've seen in the previos chapter.
+optimizing transformations work, as we've seen in the previous chapter.
 
 Finally, there can be transformations between \emph{different} languages with the \emph{same} semantic domain. Let us have two languages $\mathcal{L}$ and $\mathcal{M}$
 and let their semantics be
@@ -271,7 +271,7 @@ Our first step is to apply a specializer $\Spec{L}{M}$ to some interpreter $\Int
 \sembr{\underline{\SpecS{L}{M}\,(\Int{N}{L}\times \primi{p}^\ph_\mathcal{N})}}^\ph_\mathcal{L}\,(x)=\IntS{N}{L}\,(\primi{p}^\ph_\mathcal{N}\times x)=\sembr{\underline{\primi{p}^\ph_\mathcal{N}}}^\ph_\mathcal{N}\,(x)\eqno{(I)}
 \]
 
-The first equality follows immediately from $(\star\star\star)$ while the second~--- immediately from $(\star)$. Let's now look at the underlined parts. The \emph{right} one is, obvioiusly,
+The first equality follows immediately from $(\star\star\star)$ while the second~--- immediately from $(\star)$. Let's now look at the underlined parts. The \emph{right} one is, obviously,
 $\primi{p}^\ph_\mathcal{N}$, a program in the language $\mathcal{N}$. The \emph{left} one is some program in the language $\mathcal{L}$. The equation itself states that the semantic of these
 two programs give the same value for every input $x$. In other words, these two programs are equivalent. This is the first Futamura projection:
 
@@ -308,7 +308,7 @@ third Futamura projection:
   the interpreting language to the language of interpreter implementation.}
 \end{quote}
 
-Futamura projections are named after Y.Futamura, who discribed the first two of them in the beginning of 1970s. All three
+Futamura projections are named after Y.Futamura, who described the first two of them in the beginning of 1970s. All three
 projections were independently discovered by V.Turchin and A.Ershov, who gave them their current name.
 
 The beauty of Futamura projections is that they give a rather simple equations for rather complex tools like compilers and compiler generators.
@@ -317,7 +317,7 @@ However, this immediately raises a question if one can indeed acquire these tool
 Let's assume that we are going to use Futamura projections to implement a compiler from \lama to \texttt{x86}. Then we, first, need an interpreter
 $\Int{\mbox{\lama}}{\mbox{\texttt{x86}}}$ for \lama written in \texttt{x86} assembler. The task of implementing such an interpreter, while involving
 some low-level programming, does not look very challenging. Then, we need a specializer $\Spec{\mbox{\texttt{x86}}}{\mathcal{L}}$ for \texttt{x86}
-assember written in some language $\mathcal{L}$, not necessarily \lama. We can choose any suitable language for this purpose. Having both at
+assembler written in some language $\mathcal{L}$, not necessarily \lama. We can choose any suitable language for this purpose. Having both at
 hands, we will be able to compile \lama-programs to \texttt{x86} code using the first Futamura projection:
 
 \[
@@ -325,13 +325,13 @@ hands, we will be able to compile \lama-programs to \texttt{x86} code using the 
 \]
 
 
-And here comes the hard part: the simplest possible specializer (for example, that guaranteed by the $s$-$m$-$n$--theorem) whould produce a very
+And here comes the hard part: the simplest possible specializer (for example, that guaranteed by the $s$-$m$-$n$--theorem) would produce a very
 poor machine code; it would, in fact, just link the interpreter with the program, which invalidates the very idea of compilation. In order to
 acquire a decent result, the specializer has to be non-trivial. The task of developing a non-trivial specializer even for the first Futamura
 projection is non-trivial as well; nevertheless there are frameworks where this task is solved. For example, \texttt{GraalVM} uses the first Futamura projection
 as a tool for language bootstrapping.
 
-If we move higher in the Futamura projection hierarchy we would need at least one addtional specializer $\Spec{L}{L}$, this time
+If we move higher in the Futamura projection hierarchy we would need at least one additional specializer $\Spec{L}{L}$, this time
 for the language $\mathcal{L}$; it can be written in the $\mathcal{L}$ as well. This specializer has to be even more advanced than
 $\Spec{\mbox{\texttt{x86}}}{\mathcal{L}}$ since we expect it to decently specialize more complicated program, than interpreters.
 
