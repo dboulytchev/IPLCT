@@ -302,94 +302,172 @@ grouping of subtrees in abstract syntax tree.
 
 \subsection{Big-Step Operational Semantics}
 
-Our next step is to define the semantics for statements. We could use the denotational style as we did for expression, and it would work
-just fine. However, as our language starts to evolve, the denotational style will be harder to use according to our intentions; in addition
-studying yet another way for semantics' specification would make us more versatile.
+Our next step is to define the semantics for statements. First, as always, we need to specify the semantic domain for statements' semantics.
+From the syntactic form of statements it should be clear that we are dealing with a language with \emph{side effects}: there are read and write statements,
+which, presumably, communicate with outer world, and assignment, which, presumably, changes the values of variables. These two kinds of side effects
+play different roles: while read and write make the effect of a program execution \emph{externally observable}, assignments define internal behavior.
+Thus, essentially different by their internal behavior programs can be indistinguishable while observed externally. We reflect this consideration by
+choosing the semantic domain to be functions from input streams of integers to output streams of integers
 
-The technique we are going to use is called \emph{big-step operational semantics}. Unlike denotational case, where a semantic object
-is immediately given for each syntactic form, operational style involves the construction of intermediate \emph{evaluation relation}.
-But first, as always, we need to specify the semantic domain for statements' semantics.
+\[
+\mathbb{Z}^*\to\mathbb{Z}^*
+\]
 
-%  The form of this relation description is borrowed from mathematical logic's natural deduction approach.
+We call the pair of input-output streams \emph{world} and define the set of all worlds to be
 
-From the syntactic form of statements it should be clear that we are dealing with a language with \emph{side effects}: there are read and
-write statements, which, presumably, deal with some outer world, and assignment, which, presumably, changes the values of variables. From
-the semantics of expressions we already know the notion of state, and we already know how to calculate the values of expressions in
-given states. Thus, each statement modifies an \emph{enriched} state which consists of regular state and the outer world. We call this
-enriched state \emph{configuration}. Thus, the set of all configuration is defined as
+\[
+  \mathscr W = \mathbb Z^* \times \mathbb Z^*
+\]
+
+For simplicity, we define the following operations for worlds:
 
 \[
 \begin{array}{rcl}
-  \mathscr C &=& St \times \mathscr W\\
-  \mathscr W &=& \mathbb Z^* \times \mathbb Z^*
+  \primi{read}\,{\inbr{xi,\,o}}    & = & \inbr{x,\,\inbr{i,\,o}}\\
+  \primi{write}\,{x\,\inbr{i,\,o}} & = & \inbr{i,\,ox}\\
+  \primi{out}\,{\inbr{i,\,o}}      & = & o
 \end{array}
 \]
 
-where $\mathscr W$~--- a set of \emph{worlds}, each of which escapsulates some input-output stream pair. For
-simplicity, we define the following operations for worlds:
-
-\[
-\begin{array}{rcl}
-  \primi{read}{\inbr{xi,\,o}}    & = & \inbr{x,\,\inbr{i,\,o}}\\
-  \primi{write}{x\,\inbr{i,\,o}} & = & \inbr{i,\,ox}\\
-  \primi{out}{\inbr{i,\,o}}      & = & o
-\end{array}
-\]
-
-
-Again, we define the semantics for this language 
-
-\[
-\sembr{\bullet}_{\mathscr S} : \mathscr S \mapsto \mathbb Z^* \to \mathbb Z^*
-\]
-
-with the semantic domain of partial functions from integer streams to integer streams. Again, we will
-use \emph{big-step operational semantics}: we define a ternary relation ``$\Rightarrow_{\mathscr S}$''
-
-\[
-\Rightarrow_{\mathscr S} \subseteq \mathscr C \times \mathscr S \times \mathscr C
-\]
-
-where $\mathscr C$~--- a set of possible \emph{configurations} during a program execution.
-We will write $c_1\xRightarrow{S}_{\mathscr S}c_2$ instead of $(c_1, S, c_2)\in\Rightarrow_{\mathscr S}$ and informally
-interpret the former as ``the execution of a statement $S$ in a configuration $c_1$ completes with the configuration
-$c_2$''.
-
-The relation ``$\Rightarrow_{\mathscr S}$'' is defined by the following deductive system (see Fig.~\ref{bs_stmt}). The first
-three rules are \emph{axioms} as they do not have any premises. Note, according to these rules sometimes a program
-cannot do a step in a given configuration: a value of an expression can be undefined in a given state in rules
-$\rulename{Assign}$ and $\rulename{Write}$, and there can be no input value in rule $\rulename{Read}$. This style of
-a semantics description is called big-step operational semantics, since the results of a computation are
-immediately observable at the right hand side of ``$\Rightarrow$'' and, thus, the computation is performed in
-a single ``big'' step. And, again, this style of a semantic description can be used to easily implement a
-reference interpreter.
-
-With the relation ``$\Rightarrow_{\mathscr S}$'' defined we can abbreviate the ``surface'' semantics for the language of statements:
+The first one, ``$\primi{read}$'', takes a world in which input stream $xi$ contains at least one element $x$ and returns a pair of elements: $x$ and the residual
+word with the first element of input stream removed. The next one, ``$\primi{write}$'', to some extent does the opposite: it takes some number $x$ and a world and
+returns a world in which this number is appended to the end of the output stream. Finally, ``$\primi{out}$'' just returns the output stream of a given world.
 
 \setarrow{\xRightarrow}
-\setsubarrow{_{\mathscr S}}
-\[
-\trule{\trans{\inbr{\Lambda,\,\inbr{i,\,\epsilon}}}{S}{\inbr{\sigma,\,\omega}}}
-      {\sembr{S}_{\mathscr S}i=\primi{out}{\omega}}
-\]
-
+\setsubarrow{^\ph_{\mathscr S}}
 
 \begin{figure}[t]
-\arraycolsep=10pt
-\[\trans{c}{\llang{skip}}{c}\ruleno{Skip}\]
-\[\trans{\inbr{\sigma,\, \omega}}{\llang{x := $\;\;e$}}{\inbr{\sigma\,[x\gets\sembr{e}_{\mathscr E}\;\sigma],\,\omega}}\ruleno{Assign}\]
-\[\trule{\inbr{z,\,\omega^\prime}=\primi{read}{\omega}}
-        {\trans{\inbr{\sigma,\, \omega}}{\llang{read ($x$)}}{\inbr{\sigma\,[x\gets z],\,\omega^\prime}}}\ruleno{Read}\]
-\[\trans{\inbr{\sigma,\, \omega}}{\llang{write ($e$)}}{\inbr{\sigma,\, \primi{write}{(\sembr{e}_{\mathscr E}\;\sigma)\, \omega}}}\ruleno{Write}\]
-\[\trule{\begin{array}{cc}
-            \trans{c_1}{S_1}{c^\prime} & \trans{c^\prime}{S_2}{c_2}
-         \end{array}}
-        {\trans{c_1}{S_1\llang{;}S_2}{c_2}}\ruleno{Seq}\]
+  \[
+  \def\arraystretch{3}
+  \arraycolsep=5pt
+  \begin{array}{cr}
+    \trans{c}{\llang{skip}}{c} & \ruleno{Skip}\\
+    \trans{\inbr{\sigma,\, \omega}}{\llang{x := $\;\;e$}}{\inbr{\sigma\,[x\gets\sembr{e}^\ph_{\mathscr E}\;\sigma],\,\omega}} & \ruleno{Assign} \\
+    \trule{\inbr{z,\,\omega^\prime}=\primi{read}{\,\omega}}
+          {\trans{\inbr{\sigma,\, \omega}}{\llang{read ($x$)}}{\inbr{\sigma\,[x\gets z],\,\omega^\prime}}} & \ruleno{Read} \\[5mm]
+    \trans{\inbr{\sigma,\, \omega}}{\llang{write ($e$)}}{\inbr{\sigma,\, \primi{write}{\,(\sembr{e}^\ph_{\mathscr E}\;\sigma)\, \omega}}}& \ruleno{Write} \\
+    \trule{\begin{array}{cc}
+              \trans{c_1}{s_1}{c^\prime} & \trans{c^\prime}{s_2}{c_2}
+           \end{array}}
+          {\trans{c_1}{s_1\llang{;}s_2}{c_2}} & \ruleno{Seq}
+  \end{array}
+  \]
 \caption{Big-step operational semantics for statements}
 \label{bs_stmt}
 \end{figure}
 
+To define the semantics we could use the denotational style as we did for expressions, and it would work just fine. However, as our language starts to evolve,
+the denotational style will be harder to adjust to meet our intentions; in addition studying yet another way for semantics' specification would make us more
+versatile.
 
+The technique we are going to use is called \emph{big-step operational semantics}. Unlike denotational case, where a semantic object
+is immediately given for each syntactic form, operational style involves the construction of intermediate \emph{evaluation relation}, which we
+denote ``$\transrel$''. From the semantics of expressions we already know the notion of state and how to calculate the
+values of expressions in given states. Thus, each statement modifies an \emph{enriched} state which consists of a regular state and a world. We call this
+enriched state \emph{configuration} and define the set of all configurations to be
+
+\[
+\mathscr{C} = St \times \mathscr W
+\]
+
+Evaluation relation connects a statement and two configurations: \emph{initial} and \emph{final}:
+
+\[
+\transrel\subseteq \mathscr{C}\times\mathscr{S}\times\mathscr{C}
+\]
+
+We will use infix notation to denote the elements of evaluation relation: instead of 
+
+\[
+\inbr{c_1,\,s,\,c_2}\in\transrel
+\]
+
+we will use the form
+
+
+\[
+\trans{c_1}{s}{c_2}
+\]
+
+
+where $c_1,\,c_2\in\mathscr{C}$ and $s\in\mathscr{S}$. The informal meaning of this notation is
+``the execution of a statement $s$ in a configuration $c_1$ completes with the configuration $c_2$''.
+
+The relation ``$\transrel$'' is defined by the following deductive system (see Fig.~\ref{bs_stmt}). The system
+consists of five rules each of which has the following generic form
+
+\[
+\dfrac{\mbox{\emph{premise}}\dots\mbox{\emph{premise}}}{\mbox{\emph{conclusion}}}
+\]
+
+The informal meaning of a rule is that the conclusion holds under the condition that all the premises hold. As
+we use this system to define the relation ``$\transrel$'' the conclusions of the rules always have
+the form
+
+\[
+\trans{c_1}{s}{c_2}
+\]
+
+for some $c_1,\,c_2$ and $s$. Sometimes a rule does not contain premises, or there is no premise which
+contains ``$\transrel$''; such rules are called \emph{axioms}. Finally, we mark each rule with
+a label on the right for reference; these labels are not a part of the deductive system and play
+role of comments.
+
+We now give detailed comments for each rule to explain the whole idea of using a deductive system to
+specify semantics in whole, and big-step operational semantics in particular.
+
+The first rule, $\rulename{SKIP}$, defines the semantics of the \lstinline|skip| statement. It is an
+axiom which tells us that the evaluation of \lstinline|skip| statement does not change the configuration.
+
+The next one, $\rulename{Assign}$, deals with assignments. It is also an axiom, which tells us that an
+assignment never changes a world (notice the second component of configuration, which is left unchanged).
+As for the state component, first, we evaluate the value of expression $e$ in given state $\sigma$ using
+the semantics for expressions $\sembr{\bullet}^\ph_\mathscr{E}$, defined in the previous section. Then we
+substitute the value for variable $x$ in the state with calculated value using the primitive $\bullet\,[\bullet\gets \bullet]$
+which has the following definition:
+
+\[
+\sigma\,[x\gets v]\,y=\left\{\begin{array}{rcl}
+                                \sigma\,y & , & y \ne x\\
+                                v & , & y = x
+                             \end{array}
+                   \right.
+\]
+
+Thus, for a state $\sigma$, variable $x$, and value $v$ the state $\sigma\,[x\gets v]$ assigns $v$ to $x$ and leaves other
+variables unchanged.
+
+Two next rules, $\rulename{Read}$ and $\rulename{Write}$, describe the semantics for \lstinline|read| and
+\lstinline|write| constructs. In both cases the definitions use corresponding primitives for worlds: in $\rulename{Read}$
+we extract the next value, $z$, (if any) from the input stream and return the modified state, in which the variable being
+read is associated with $z$, and remaining world. In $\rulename{Write}$ we first calculate the value of the expression
+being written in current state and put it into the output stream of the word. Note, both rules are axioms as well:
+although $\rulename{Read}$ contains a premise, this premise does not contain ``$\transrel$''.
+
+Finally, the last rule $\rulename{Seq}$ prescribes the semantics for the sequential composition. This time it is
+not an axiom, and it tell us that in order to evaluate the composition of two statements we first need to
+evaluate the first one, obtaining some intermediate configuration $c^\prime$, and then the second one, using
+this intermediate configuration as input. Note, the order of evaluation is defined not by the order of
+premises, but by their nature: regardless the order in which the premises are given it is impossible
+to calculate $c_2$ unless $c^\prime$ is calculated first.
+
+With the relation ``$\transrel$'' defined we can abbreviate the ``surface'' semantics for the language of statements:
+
+\[
+\trule{\trans{\inbr{\Lambda,\,\inbr{i,\,\epsilon}}}{s}{\inbr{\sigma,\,\omega}}}
+      {\sembr{s}^\ph_{\mathscr S}\,i=\primi{out}{\,\omega}}
+\]
+
+This rule (which is \emph{not} a part of big-step operational semantics) establishes a connection between
+evaluation relation ``$\transrel$'' and the semantics for statements $\sembr{\bullet}^\ph_\mathscr{S}$. In order
+to calculate the output stream for given input sream $i$ we first construct an initial configuration
+
+\[
+\inbr{\Lambda,\,\inbr{i,\,\epsilon}}
+\]
+
+(remember, $\Lambda$ stands for the empty state), then calculate the final configuration $\inbr{\sigma,\,\omega}$ using
+the evaluation relation, and then extract the output stream of the final world.
 
 
 
