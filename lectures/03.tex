@@ -288,17 +288,17 @@ syntax description define four \emph{primitive} statements: empty, assignment, i
 combine primitive statements info compositions. The order and subordination of composition counterparts strictly speaking is essential, thus
 
 \begin{lstlisting}
-   read (x); {y := x+4; write (y)}
+   read (x); (y := x+4; write (y))
 \end{lstlisting}
 
 and
 
 \begin{lstlisting}
-   {read (x); y := x+4}; write (y)
+   (read (x); y := x+4); write (y)
 \end{lstlisting}
 
-are different statements; we use here curved brackets ``\lstinline|{|'' and ``\lstinline|}|'' as elements of concrete syntax to reflect the
-grouping of subtrees in abstract syntax tree.
+are different statements; we use here brackets as elements of concrete syntax to reflect the grouping of subtrees in abstract syntax tree.
+To reduce the use of brackets we assume that composition by default associates to the \emph{right} (i.e. as in the former example).
 
 \subsection{Big-Step Operational Semantics}
 
@@ -307,7 +307,7 @@ From the syntactic form of statements it should be clear that we are dealing wit
 which, presumably, communicate with outer world, and assignment, which, presumably, changes the values of variables. These two kinds of side effects
 play different roles: while read and write make the effect of a program execution \emph{externally observable}, assignments define internal behavior.
 Thus, essentially different by their internal behavior programs can be indistinguishable while observed externally. We reflect this consideration by
-choosing the semantic domain to be functions from input streams of integers to output streams of integers
+choosing the semantic domain to be a set of functions from input streams of integers to output streams of integers
 
 \[
 \mathbb{Z}^*\to\mathbb{Z}^*
@@ -391,7 +391,7 @@ we will use the form
 
 
 where $c_1,\,c_2\in\mathscr{C}$ and $s\in\mathscr{S}$. The informal meaning of this notation is
-``the execution of a statement $s$ in a configuration $c_1$ completes with the configuration $c_2$''.
+``the evaluation of a statement $s$ in a configuration $c_1$ completes with the configuration $c_2$''.
 
 The relation ``$\transrel$'' is defined by the following deductive system (see Fig.~\ref{bs_stmt}). The system
 consists of five rules each of which has the following generic form
@@ -416,7 +416,7 @@ role of comments.
 We now give detailed comments for each rule to explain the whole idea of using a deductive system to
 specify semantics in whole, and big-step operational semantics in particular.
 
-The first rule, $\rulename{SKIP}$, defines the semantics of the \lstinline|skip| statement. It is an
+The first rule, $\rulename{Skip}$, defines the semantics of the \lstinline|skip| statement. It is an
 axiom which tells us that the evaluation of \lstinline|skip| statement does not change the configuration.
 
 The next one, $\rulename{Assign}$, deals with assignments. It is also an axiom, which tells us that an
@@ -439,10 +439,10 @@ variables unchanged.
 
 Two next rules, $\rulename{Read}$ and $\rulename{Write}$, describe the semantics for \lstinline|read| and
 \lstinline|write| constructs. In both cases the definitions use corresponding primitives for worlds: in $\rulename{Read}$
-we extract the next value, $z$, (if any) from the input stream and return the modified state, in which the variable being
+we extract the next value $z$ (if any) from the input stream and return the modified state, in which the variable being
 read is associated with $z$, and remaining world. In $\rulename{Write}$ we first calculate the value of the expression
 being written in current state and put it into the output stream of the word. Note, both rules are axioms as well:
-although $\rulename{Read}$ contains a premise, this premise does not contain ``$\transrel$''.
+although $\rulename{Read}$ has a premise, this premise does not contain ``$\transrel$''.
 
 Finally, the last rule $\rulename{Seq}$ prescribes the semantics for the sequential composition. This time it is
 not an axiom, and it tell us that in order to evaluate the composition of two statements we first need to
@@ -455,7 +455,7 @@ With the relation ``$\transrel$'' defined we can abbreviate the ``surface'' sema
 
 \[
 \trule{\trans{\inbr{\Lambda,\,\inbr{i,\,\epsilon}}}{s}{\inbr{\sigma,\,\omega}}}
-      {\sembr{s}^\ph_{\mathscr S}\,i=\primi{out}{\,\omega}}
+      {\sembr{s}^\ph_{\mathscr S}\,i=\primi{out}{\,\omega}}\eqno{(\star)}
 \]
 
 This rule (which is \emph{not} a part of big-step operational semantics) establishes a connection between
@@ -468,6 +468,145 @@ to calculate the output stream for given input sream $i$ we first construct an i
 
 (remember, $\Lambda$ stands for the empty state), then calculate the final configuration $\inbr{\sigma,\,\omega}$ using
 the evaluation relation, and then extract the output stream of the final world.
+
+Similarly to the denotational case, we can formulate two properties of given semantics:
+
+\begin{itemize}
+\item \emph{Determinism}: given arbitrary $c\in\mathscr{C}$ and $s\in\mathscr{S}$ there exists at most one $c^\prime\in\mathscr{C}$ such that
+
+  \[
+  \trans{c}{s}{c^\prime}
+  \]
+
+  Indeed, we can see that for each kind of statement and for each initial configurations there is at most one applicable rule.
+
+\item \emph{Compositionality}: for each non-axiom rule (this time, only $\rulename{Seq}$) in all its premises only
+  a proper subconstructs of the conclusion construct are used (this time, $s_1$ and $s_2$ of $s_1\llang{;}\,s_2$). Hence,
+  the principle of structural induction can be used to prove the properties of the semantics.
+\end{itemize}
+
+We now show by example how big-step operational semantics works. Let us have the following program
+
+\begin{lstlisting}
+   read (x); read (y); z := x + y; write (z)
+\end{lstlisting}
+
+and let the input stream be $\inbr{2,\,3}$. First, according to $(\star)$, we construct an initial configuration
+and write down what we currently know about the evaluation relation:
+
+\[
+\trans{\inbr{\Lambda,\,\inbr{\inbr{2,\,3},\,\epsilon}}}{\llang{read (x); read (y); z := x + y; write (z)}}{\fbox{?}}
+\]
+
+We do not know yet what to put instead of $\fbox{?}$. To figure it out we need to seek for applicable rule. It turns
+out that the only one rule can be applied, namely $\rulename{Seq}$ (remember, ``\lstinline|;|'' associates to
+the right). So, we can move one floor up by applying the rule and filling in the parts we already know
+so far:
+
+\[
+\trule{\trans{\inbr{\Lambda,\,\inbr{\inbr{2,\,3},\,\epsilon}}}{\llang{read (x)}}{\fbox{??}}\quad\trans{\fbox{??}}{\llang{read (y); z := x + y; write (z)}}{\fbox{?}}}
+      {\trans{\inbr{\Lambda,\,\inbr{\inbr{2,\,3},\,\epsilon}}}{\llang{read (x); read (y); z := x + y; write (z)}}{\fbox{?}}}
+\]
+
+In addition to unknown configuration ``$\fbox{?}$'' we now have another one, ``$\fbox{??}$''. But, now we can apply rule $\rulename{Read}$ to the
+first premise, which immediately lets us calculate what ``$\fbox{??}$'' is:
+
+\[
+\trule{\trule{\inbr{2,\,\inbr{\inbr{3},\,\epsilon}}=\primi{read}{\,\inbr{\inbr{2,\,3},\,\epsilon}}}
+             {\trans{\inbr{\Lambda,\,\inbr{\inbr{2,\,3},\,\epsilon}}}{\llang{read (x)}}{\inbr{[\llang{x}\mapsto 2],\,\inbr{\inbr{3},\,\epsilon}}}}\quad
+       \dots}
+      {\trans{\inbr{\Lambda,\,\inbr{\inbr{2,\,3},\,\epsilon}}}{\llang{read (x); read (y); z := x + y; write (z)}}{\fbox{?}}}
+\]
+
+Now we can proceed with the second premise:
+
+\[
+\trans{\inbr{[\llang{x}\mapsto 2],\,\inbr{\inbr{3},\,\epsilon}}}{\llang{read (y); z := x + y; write (z)}}{\fbox{?}}
+\]
+
+Again, we can move one floor up by using the rule $\rulename{Seq}$ (and only it):
+
+\[
+\trule{\trans{\inbr{[\llang{x}\mapsto 2],\,\inbr{\inbr{3},\,\epsilon}}}{\llang{read (y)}}{\fbox{???}}\quad\trans{\fbox{???}}{\llang{z := x + y; write (z)}}{\fbox{?}}}
+      {\trans{\inbr{[\llang{x}\mapsto 2],\,\inbr{\inbr{3},\,\epsilon}}}{\llang{read (y); z := x + y; write (z)}}{\fbox{?}}}
+\]
+
+And, again, we can apply the rule $\rulename{Read}$ to the first premise, which gives us the value for ``$\fbox{???}$'':
+
+\[
+\trule{\trule{\inbr{3,\,\inbr{\epsilon,\,\epsilon}}=\primi{read}{\,\inbr{\inbr{3},\,\epsilon}}}
+             {\trans{\inbr{[\llang{x}\mapsto 2],\,\inbr{\inbr{3},\,\epsilon}}}{\llang{read (y)}}{\inbr{[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3],\,\inbr{\epsilon,\,\epsilon}}}}\quad
+       \dots}
+      {\trans{\inbr{[\llang{x}\mapsto 2],\,\inbr{\inbr{3},\,\epsilon}}}{\llang{read (y); z := x + y; write (z)}}{\fbox{?}}}
+\]
+
+Moving to the second premise and applyng the rule $\rulename{Seq}$ gives us
+
+\[
+\trule{\trans{\inbr{[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3],\,\inbr{\epsilon,\,\epsilon}}}{\llang{z := x + y}}{\fbox{????}}\quad\trans{\fbox{????}}{\llang{write (z)}}{\fbox{?}}}
+      {\trans{\inbr{[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3],\,\inbr{\epsilon,\,\epsilon}}}{\llang{z := x + y; write (z)}}{\fbox{?}}}
+\]
+
+which makes it possible to apply the rule $\rulename{Assign}$ (we left the reader to confirm that $\sembr{\llang{x+y}}^\ph_\mathscr{E}\,[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3]=5$):
+
+\[
+\trule{\trans{\inbr{[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3],\,\inbr{\epsilon,\,\epsilon}}}{\llang{z := x + y}}{\inbr{[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3,\,\llang{z}\mapsto 5],\,\inbr{\epsilon,\,\epsilon}}}\quad
+       \dots}
+      {\trans{\inbr{[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3],\,\inbr{\epsilon,\,\epsilon}}}{\llang{z := x + y; write (z)}}{\fbox{?}}}
+\]
+
+This gives us the value for ``$\fbox{????}$'', which allows us to finally calculate ``$\fbox{?}$'' using the axiom $\rulename{Write}$:
+
+\[
+\trans{\inbr{[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3,\,\llang{z}\mapsto 5],\,\inbr{\epsilon,\,\epsilon}}}{\llang{write (z)}}{\inbr{[\llang{x}\mapsto 2,\,\llang{y}\mapsto 3,\,\llang{z}\mapsto 5],\,\inbr{\epsilon,\,\inbr{5}}}}
+\]
+
+Thus, taking into account $(\star)$ yet again, we have
+
+\[
+\sembr{\llang{read (x); read (y); z := x + y; write (z)}}^\ph_\mathscr{S}\,\inbr{2,\,3}=5
+\]
+
+We can see that big-step operational semantics allows us to perform program evaluation for concrete input: we just form an initial configuration for this input and then
+systematically apply rules of the semantics until (and if) we come to the result of the evaluation. The application of an axiom completes in one
+step (we can immediately evaluate the result configuration); the application of the rule for sequential composition amounts to splitting the composite
+statement into two, moving one floor up in the semantics's rule, and repeat. In the process a certain structure, called \emph{derivation tree}, is
+maintained implicitly. The nodes of a derivation tree are \emph{instances} of the semantics' rules, the edges connect premises with conclusions. The derivation
+tree for the example we just considered is depictured in Fig.~\ref{derivation-tree} (the program's statements are omitted due to space considerations). Additionally
+to the derivation tree itself a configuration calculation flow is shown explicitly by dashed arrows. We can see, that for axioms these arrows come directly from
+left- to right-hand part of the rules, while the rule for composition threads configurations from right-hard part of one rule to the left-hand part of another.
+
+Besides evaluation big-step operational semantics can also be used to \emph{prove} the properties of the programs. For example, we can prove, that for
+arbitrary $n,\, m\in\mathbb{N}$ 
+
+\[
+\sembr{\llang{read (x); read (y); z := x + y; write (z)}}^\ph_\mathscr{S}\,\inbr{n,\,m}=n+m
+\]
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.8]{images/03-01.eps}
+  \caption{Derivation tree example}
+  \label{derivation-tree}
+\end{figure}
+\FloatBarrier
+
+Indeed, we just need to repeat the construction of the derivation tree as we did in the evluation case, but this time instead of concrete numbers use
+their abstract denotations $n$ and $m$; all steps could be performed as before until we arrive at the assignment rule. This time we would need to prove
+an additional lemma
+
+\[
+\sembr{\llang{x + y}}^\ph_\mathscr{E}\,[\llang{x}\mapsto n,\,\llang{y}\mapsto m]=n+m
+\]
+
+which, of course, can be easily done by unfolding corresponding rule for $\sembr{\bullet}^\ph_\mathscr{E}$.
+
+And, besides proving the properties of \emph{concrete programs}, big-step operational semantics can be used to prove the properties
+of the semantics of the \emph{language} as whole. We consider some examples in the next section.
+
+\subsection{Properties of the Semantics}
+
+
 
 
 

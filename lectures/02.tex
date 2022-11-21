@@ -6,7 +6,7 @@ consider some sample languages, their semantics and techniques for interpreter i
 
 \section{Languages and Semantics}
 
-We consider programming language $\mathcal L$ as a (countable) set of programs
+We consider a programming language $\mathcal L$ as a (countable) set of programs
 
 \[
 \mathcal{L}=\{\primi{p}_1,\,\primi{p}_2,\dots\}
@@ -227,7 +227,7 @@ A particular interesting kind of interpreter is \emph{self}-interpreter $\Int{L}
 In the computability theory such interpreters are known under the name ``\emph{universal functions}'', and it is proven than universal functions exist for
 all Turing-complete languages.
 
-Another interesting program is, of course, compiler. Given languages $\mathcal{L}$, $\mathcal{M}$, and $\mathcal{N}$, a compiler from
+Another interesting program is, of course, a compiler. Given languages $\mathcal{L}$, $\mathcal{M}$, and $\mathcal{N}$, a compiler from
 $\mathcal L$ to $\mathcal N$, written in a language $\mathcal M$, is a program $\Comp{L}{N}{M}\in\mathcal M$ such that
 for all programs $\primi{p}^\ph_\mathcal{L}\in\mathcal L$ and all input data values $x\in\mathfrak{D}$ the following equation holds:
 
@@ -255,7 +255,7 @@ again, guaranteed by the computability theory (\emph{Kleene $s$-$m$-$n$--theorem
 
 \section{Futamura Projections}
 
-We now study an few elegant theoretical constructs which connect together the notions of interpreters, compilers and specializers. To simplify the presentation we
+We now study a few elegant theoretical constructs which connect together the notions of interpreters, compilers and specializers. To simplify the presentation we
 introduce the following denotation
 
 \[
@@ -287,7 +287,7 @@ Next, let's specialize a specializer for an interpreter:
   \sembr{\primi{p}^\ph_\mathcal{N}}^\ph_\mathcal{N}\,(x)\tag{II}
 \end{multline*}
 
-The first equation, again, immediately follows from $(\star\star\star)$, while the second~--- from $(I)$. If to look at the underlined part long enough, it becomes
+The first equation, again, immediately follows from $(\star\star\star)$, while the second~--- from $(I)$. If we look at the underlined part long enough, it becomes
 evident that it is a program in the language $\mathcal{M}$ which satisfies the equation $(\star\star)$, i.e. a compiler $\Comp{N}{L}{M}$. This is a second Futamura projection:
 
 \begin{quote}
