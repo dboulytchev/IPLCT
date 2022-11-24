@@ -297,7 +297,7 @@ and
    (read (x); y := x+4); write (y)
 \end{lstlisting}
 
-are different statements; we use here brackets as elements of concrete syntax to reflect the grouping of subtrees in abstract syntax tree.
+are different statements; we use here brackets as elements of concrete syntax to reflect the grouping of subtrees of abstract syntax tree.
 To reduce the use of brackets we assume that composition by default associates to the \emph{right} (i.e. as in the former example).
 
 \subsection{Big-Step Operational Semantics}
@@ -307,7 +307,7 @@ From the syntactic form of statements it should be clear that we are dealing wit
 which, presumably, communicate with outer world, and assignment, which, presumably, changes the values of variables. These two kinds of side effects
 play different roles: while read and write make the effect of a program execution \emph{externally observable}, assignments define internal behavior.
 Thus, essentially different by their internal behavior programs can be indistinguishable while observed externally. We reflect this consideration by
-choosing the semantic domain to be a set of functions from input streams of integers to output streams of integers
+choosing the semantic domain to be the set of functions from input streams of integers to output streams of integers
 
 \[
 \mathbb{Z}^*\to\mathbb{Z}^*
@@ -391,7 +391,11 @@ we will use the form
 
 
 where $c_1,\,c_2\in\mathscr{C}$ and $s\in\mathscr{S}$. The informal meaning of this notation is
-``the evaluation of a statement $s$ in a configuration $c_1$ completes with the configuration $c_2$''.
+``the evaluation of a statement $s$ in a configuration $c_1$ completes with the configuration $c_2$''. As the
+statement $s$ can have arbitrarily complex structure this semantic style is called ``big-step'' since
+the evaluation relation ``$\transrel$'' immediately delivers us the final configuration $c_2$ as if
+the computations were performed in one big step, without observable subdivision to computations
+of smaller components of $s$.
 
 The relation ``$\transrel$'' is defined by the following deductive system (see Fig.~\ref{bs_stmt}). The system
 consists of five rules each of which has the following generic form
@@ -481,7 +485,7 @@ Similarly to the denotational case, we can formulate two properties of given sem
   Indeed, we can see that for each kind of statement and for each initial configurations there is at most one applicable rule.
 
 \item \emph{Compositionality}: for each non-axiom rule (this time, only $\rulename{Seq}$) in all its premises only
-  a proper subconstructs of the conclusion construct are used (this time, $s_1$ and $s_2$ of $s_1\llang{;}\,s_2$). Hence,
+  proper subconstructs of the conclusion construct are used (this time, $s_1$ and $s_2$ of $s_1\llang{;}\,s_2$). Hence,
   the principle of structural induction can be used to prove the properties of the semantics.
 \end{itemize}
 
@@ -567,6 +571,13 @@ Thus, taking into account $(\star)$ yet again, we have
 \sembr{\llang{read (x); read (y); z := x + y; write (z)}}^\ph_\mathscr{S}\,\inbr{2,\,3}=5
 \]
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.8]{images/03-01.eps}
+  \caption{Derivation tree example}
+  \label{derivation-tree}
+\end{figure}
+
 We can see that big-step operational semantics allows us to perform program evaluation for concrete input: we just form an initial configuration for this input and then
 systematically apply rules of the semantics until (and if) we come to the result of the evaluation. The application of an axiom completes in one
 step (we can immediately evaluate the result configuration); the application of the rule for sequential composition amounts to splitting the composite
@@ -576,20 +587,14 @@ tree for the example we just considered is depictured in Fig.~\ref{derivation-tr
 to the derivation tree itself a configuration calculation flow is shown explicitly by dashed arrows. We can see, that for axioms these arrows come directly from
 left- to right-hand part of the rules, while the rule for composition threads configurations from right-hard part of one rule to the left-hand part of another.
 
+\FloatBarrier
+
 Besides evaluation big-step operational semantics can also be used to \emph{prove} the properties of the programs. For example, we can prove, that for
 arbitrary $n,\, m\in\mathbb{N}$ 
 
 \[
 \sembr{\llang{read (x); read (y); z := x + y; write (z)}}^\ph_\mathscr{S}\,\inbr{n,\,m}=n+m
 \]
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[scale=0.8]{images/03-01.eps}
-  \caption{Derivation tree example}
-  \label{derivation-tree}
-\end{figure}
-\FloatBarrier
 
 Indeed, we just need to repeat the construction of the derivation tree as we did in the evluation case, but this time instead of concrete numbers use
 their abstract denotations $n$ and $m$; all steps could be performed as before until we arrive at the assignment rule. This time we would need to prove
@@ -606,8 +611,213 @@ of the semantics of the \emph{language} as whole. We consider some examples in t
 
 \subsection{Properties of the Semantics}
 
+Now we formulate some simple properties of the semantics for straight-line programs; as the language is rather simple, these
+properties and their proofs might look obvious. We nevertheless do this as a set of warming-up exersices to demonstrate
+relevant techniques before dealing with more advanced languages with less trivial properties.
+
+\subsubsection{Associativity of Composition}
+
+First we consider rather an expected property of sequential composition to be \emph{associative}.
+
+\begin{lemma}[Associativity of composition] For arbitrary $s_1,\,s_2,\,s_3$ and arbitrary $c_1,\,c_2$
+
+\[
+\trans{c_1}{\llang{$s_1$; ($s_2$; $\,s_3$)}}{c_2}\xLeftrightarrow{\phantom{XXX}}{}\trans{c_1}{\llang{($s_1$; $\,s_2$); $\,s_3$}}{c_2}
+\]
 
 
+In other words, the grouping of statements inside compositions is not essential, only their order.
+\end{lemma}
+
+\begin{proof}
+Proving this claim amounts to
+proving it in both directions; we only do it from left to right since the opposite can be done similarly. So, we assume
+
+\[
+\trans{c_1}{\llang{$s_1$; ($s_2$; $\,s_3$)}}{c_2}\eqno{(\star)}
+\]
+
+From this it is immedialety follows that
+
+\[
+\trule{\trans{c_1}{s_1}{c^\prime}\quad\trans{c^\prime}{\llang{$s_2$; $\,s_3$}}{c_2}}
+      {\trans{c_1}{\llang{$s_1$; ($s_2$; $\,s_3$)}}{c_2}}
+\]
+
+because there is no way to complete the derivation tree for $(\star)$ other than by applying the rules of the semantics (this time, $\rulename{Seq}$).
+Similarly, we can apply the same rule for the second premise, which gives us
+
+\[
+\trule{\trans{c_1}{s_1}{c^\prime}\qquad\trule{\trans{c^\prime}{s_2}{c^{\prime\prime}}\quad\trans{c^{\prime\prime}}{s_3}{c_2}}{\trans{c^\prime}{\llang{$s_2$; $\,s_3$}}{c_2}}}
+      {\trans{c_1}{\llang{$s_1$; ($s_2$; $\,s_3$)}}{c_2}}
+\]
+
+Thus, we may conclude, that
+
+\[
+\begin{array}{c}
+  \trans{c_1}{s_1}{c^\prime}\\
+  \trans{c^\prime}{s_2}{c^{\prime\prime}}\\
+  \trans{c^{\prime\prime}}{s_3}{c_2}
+\end{array}
+\]
+
+for some configurations $c^\prime$ and $c^{\prime\prime}$. Now we turn our attention to the following evaluation relation:
+
+\[
+\trans{c_1}{\llang{($s_1$; $\,s_2$); $\,s_3$}}{\fbox{?}}
+\]
+
+We have to prove that $\fbox{?}=c_2$; again, applying rule $\rulename{Seq}$ twice we arrive at (a partial) derivation tree
+
+\[
+\trule{\trule{\trans{c_1}{s_1}{\fbox{???}}\quad\trans{\fbox{???}}{s_2}{\fbox{??}}}
+             {\trans{c_1}{\llang{$s_1$; $\,s_2$}}{\fbox{??}}}\qquad\trans{\fbox{??}}{s_3}{\fbox{?}}}
+      {\trans{c_1}{\llang{($s_1$; $\,s_2$); $\,s_3$}}{\fbox{?}}}
+\]
+
+By the determinism of the semantics we can conclude that $\fbox{???}=c^\prime$, from which (again, by determinism) immediately follows that
+$\fbox{??}=c^{\prime\prime}$ and, finally, that $\fbox{?}=c_2$.
+\end{proof}
+
+Note, we did not use anything besides the rule $\rulename{Seq}$, thus
+the associativity of composition does not depend on other rules and will hold as long as the rule $\rulename{Seq}$
+is kept in its current form.
+
+From what we've just proven it is immediately follows that for arbitrary $s_1,\,s_2,\,s_3$ 
+
+\[
+\sembr{\llang{$s_1$; ($s_2$; $\,s_3$)}}^\ph_\mathscr{S}=\sembr{\llang{($s_1$; $\,s_2$); $\,s_3$}}^\ph_\mathscr{S}
+\]
+
+In other words, regrouping the components of composition is an equivalent transformation.
+
+\subsubsection{Finite Read and Write}
+
+The next property we are going to establish is that every statement can read only a finite number of input
+stream elements; this number depends only on the statement itself, and for all initial configurations with an input stream
+shorter that that number the evaluation never comes to a final configuration. Formally, we prove the following lemma:
+
+\begin{lemma}[Finite read] For any statement $s$ there is a natural number $n$ such that for every configuration $c=\inbr{\sigma,\,\inbr{i,\,o}}$
+
+\begin{enumerate}
+\item if $|i|<n$ then there is no configuration $c^\prime$ such that $\trans{c}{s}{c^\prime}$;
+\item if $|i|\ge n$ and there is some configuration $c^\prime=\inbr{\sigma^\prime,\,\inbr{i^\prime,\,o^\prime}}$ such that $\trans{c}{s}{c^\prime}$, then
+  $|i^\prime|=|i|-n$.
+\end{enumerate}
+
+\end{lemma}
+
+\begin{proof}   
+The proof goes by structural induction. For the base case we need to consider four simple statements and four corresponding semantics rules.
+By inspecting the rules $\rulename{Skip}$, $\rulename{Assign}$, and $\rulename{Write}$ we can conclude that neither of them touches input stream. Thus,
+if an evaluation according to these rules succesfully completes, then input streams of initial and final configurations are equal. This means that for these
+three statements $n=0$.
+
+On the contrary, the rule $\rulename{Read}$ takes one element from input stream and puts it into a state. In the final configuration input stream will be one
+element shorter, and this configuration can not be constructed if the initial one had empty input stream. Thus, in this case $n=1$.
+
+To complete the proof, we need to perform an induction step by inspecting the rule $\rulename{Seq}$. Let us have a statement $s_1\llang{;}s_2$; by
+induction hypothesis we may conclude, that there are numbers $n_1$ and $n_2$ such the claim is true for $s_1$ and $s_2$, respectively. Let first
+assume, that for some configuration $c=\inbr{\sigma,\,\inbr{i,\,o}}$ there is another one $c^\prime=\inbr{\sigma^\prime,\,\inbr{i^\prime,\,o^\prime}}$ such that
+
+\[
+\trans{c}{s_1\llang{;}s_2}{c^\prime}
+\]
+
+By unfolding the rule $\rulename{Seq}$ we have
 
 
+\[
+\trule{\trans{c}{s_1}{\inbr{\sigma^{\prime\prime},\,\inbr{i^{\prime\prime},\,o^{\prime\prime}}}}\quad\trans{\inbr{\sigma^{\prime\prime},\,\inbr{i^{\prime\prime},\,o^{\prime\prime}}}}{s_2}{c^\prime}}
+      {\trans{c}{s_1\llang{;}s_2}{c^\prime}}
+\]
+
+From induction hypothesis for $s_1$ we know, that $|i^{\prime\prime}|=|i|-n_1$; from induction hypothesis for $s_2$ we know, that $|i^\prime|=|i^{\prime\prime}|-n_2$; thus, overall
+$|i^\prime|=|i|-n_1-n_2$, or $|i^\prime|=|i|-(n_1+n_2)$ and $n=n_1+n_2$.
+
+Let us now assume that $|i|<n_1+n_2$. If $|i|<n_1$, then, by the induction hypothesis for $s_1$, there is no configuration $c^{\prime\prime}$ such that
+
+\[
+\trans{\inbr{\sigma,\,\inbr{i,\,o}}}{s_1}{c^{\prime\prime}}
+\]
+
+If $n_1\le|i|<n_1+n_2$ and there is a configuration $c^{\prime\prime}=\inbr{\sigma^{\prime\prime},\,\inbr{i^{\prime\prime},\,o^{\prime\prime}}}$ such that
+
+\[
+\trans{\inbr{\sigma,\,\inbr{i,\,o}}}{s_1}{c^{\prime\prime}}
+\]
+
+then $|i^{\prime\prime}|<n_2$ by induction hypothesis for $s_1$; by induction hypothesis for $s_2$ there is no configuration $c^\prime$ such that
+
+\[
+\trans{c^{\prime\prime}}{s_2}{c^\prime}
+\]
+
+which completes the proof.
+\end{proof}
+
+A similar property can be established for output streams.
+
+\begin{lemma}[Finite write] Let $s$ be a statement. Then there is a natural number $n$ such that for each
+pairs of configurations $c=\inbr{\sigma,\,\inbr{i,\,o}}$ and $c^\prime=\inbr{\sigma^\prime,\,\inbr{i^\prime,\,o^\prime}}$ if
+
+\[
+\trans{c}{s}{c^\prime}
+\]
+
+then $|o^\prime|=|o|+n$.
+\end{lemma}
+
+\begin{proof}
+  Like in the previous lemma, the principle of structural induction gives us the blueprint for the proof.
+  In the base case, we consider four simple statements and corresponding semantics rules. For all cases, except for
+  $\rulename{Write}$, the output stream is left untouched, thus $n=0$. For $\rulename{Write}$, if the statement
+  managed to succeed, the output stream in the final configuration is one element longer, than in the initial
+  one, thus $n=1$.
+
+  In the induction step case, we have a statement $s_1\llang{;}s_2$ and we assume that lemma holds for $s_1$ and $s_2$; this
+  gives us the numbers $n_1$ and $n_2$. Next we assume that
+
+  \[
+  \trans{c}{s_1\llang{;}s_2}{c^\prime}
+  \]
+
+  and unfold the rule $\rulename{Seq}$:
+
+  \[
+  \trule{\trans{c}{s_1}{\inbr{\sigma^{\prime\prime},\,\inbr{i^{\prime\prime},\,o^{\prime\prime}}}}\quad\trans{\inbr{\sigma^{\prime\prime},\,\inbr{i^{\prime\prime},\,o^{\prime\prime}}}}{s_2}{c^\prime}}
+        {\trans{c}{s_1\llang{;}s_2}{c^\prime}}
+  \]
+
+
+  By induction hypothesis for $s_1$ we know that $|o^{\prime\prime}|=|o|+n_1$; by induction hypothesis for $s_2$~--- that $|o^\prime|=|o^{\prime\prime}|+n_2$. Thus, $|o^\prime|=|o|+(n_1+n_2)$, from
+  which we conclude $n=n_1+n_2$.
+\end{proof}
+
+We can see the similarity between these two proofs; to tell the truth this is the case for all claims that can be proven by structural induction. Thus, almost every time
+when we encounter such a claim we will skip the proof.
+
+From these two lemmas we can derive the following corollaries:
+
+\begin{enumerate}
+\item For arbitrary $s\in\mathscr{S}$,$\,i,\,i^\prime\in\mathbb{Z}^*$ if both $\sembr{s}^\ph_\mathscr{S}\,i$ and $\sembr{s}^\ph_\mathscr{S}\,i^\prime$ defined, then
+  \[
+  |\sembr{s}^\ph_\mathscr{S}\,i|=|\sembr{s}^\ph_\mathscr{S}\,i^\prime|
+  \]
+
+  In other words, the length of the result depends only on the statement, not input data.
+
+\item
+  Let $\sembr{s}^\ph_\mathscr{S}\,i$ is defined for some $s\in\mathscr{S}$ and $i\in\mathbb{Z}^*$. Then for arbitrary $i^\prime\in\mathbb{Z}^*$
+
+  \[
+   \sembr{s}^\ph_\mathscr{S}\,ii^\prime=\sembr{s}^\ph_\mathscr{S}\,i
+   \]
+
+   In other words, if a program has returned some result for some input, it will also return the same result
+   if we arbitrarily extend this input. The proof uses the determinism property of the semantics.
+\end{enumerate}
+
+\subsubsection{Enumeration of Variables}
 
