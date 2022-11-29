@@ -819,5 +819,292 @@ From these two lemmas we can derive the following corollaries:
    if we arbitrarily extend this input. The proof uses the determinism property of the semantics.
 \end{enumerate}
 
-\subsubsection{Enumeration of Variables}
+\subsubsection{Variable Renaming}
 
+The last example of a semantic property we are going to consider is \emph{equivalence up to variable renaming}.
+
+By observing the semantics of expressions and statements we may notice that to some extent all variables
+are indistinguishable: no rule requires any \emph{specific} variable to be used, any variable can be potentially used
+anywhere. Thus, if we, for example, have an assignment
+
+\begin{lstlisting}[mathescape=true]
+   a := $E$
+\end{lstlisting}
+
+we can rename ``\lstinline|a|'' in, say, ``\lstinline|b|'', and nothing changes as long as we simultaneously
+rename all following occurrencies of ``\lstinline|a|'' to ``\lstinline|b|'' as well. We have, however, to be
+careful to avoid  \emph{coalescing} different variables into one; for example, if ``\lstinline|b|'' already
+used in the same program, the result of renaming may or may not be correct depending on the properties
+of this concrete program. Thus, we should only consider \emph{one-to-one} variable renamings.
+
+More formally, we call a function
+
+\[
+\theta : \mathscr{X}\to\mathscr{X}
+\]
+
+a \emph{renaming} iff the following two conditions hold:
+
+\begin{enumerate}
+\item $\theta$ is total (defined for each $x\in\mathscr{X}$);
+\item for each $y\in\mathscr{X}$ there is a unique $x\in\mathscr{X}$ such that $\theta\,(x)=y$.
+\end{enumerate}
+
+This is in fact a mathematical definition of a \emph{bijective} mapping from $\mathscr{X}$ to $\mathscr{X}$.
+It is immediately follows from the definition that the inverse mapping $\theta^{-1}$ exists, which is
+also a bijection. Moreover, both compositions $\theta\theta^{-1}$ and $\theta^{-1}\theta$ are identity
+functions.
+
+We now define what is a result of application of a renaming $\theta$ to an expression $e$ (notation: $e\,\theta$):
+
+\[
+\begin{array}{rclcl}
+  x\,\theta&=&\theta\,(x)&,&x\in\mathscr{X}\\
+  n\,\theta&=&n&,&n\in\mathbb{N}\\
+  (l\oplus r)\,\theta&=&(l\,\theta)\oplus(r\,\theta)&
+\end{array}
+\]
+
+In a nutshell, $e\,\theta$ is an expression in which all variables are substituted to their images according to $\theta$.
+Similarly, we can extend the application of renaming to statements:
+
+\[
+\begin{array}{rcl}
+  \llang{skip}\,\theta&=&\llang{skip}\\
+  (x\llang{:=}e)\,\theta&=&(\theta\,(x))\llang{:=}(e\,\theta)\\
+  (\llang{read ($x$)})\,\theta&=&\llang{read ($\theta\,(x)$)}\\
+  (\llang{write ($e$)})\,\theta&=&\llang{write ($e\,\theta$)}\\
+  (s_1\llang{;}s_2)\,\theta&=&(s_1\,\theta)\llang{;}(s_2\;\theta)
+\end{array}
+\]
+
+\begin{lemma}
+  Let $s$ be a statement and $\theta$ be a renaming. Then
+
+  \[
+  s\equiv s\,\theta
+  \]
+\end{lemma}
+\begin{proof}
+  First, we recollect that
+
+  \[
+  s\equiv s\,\theta
+  \]
+
+  means precisely
+
+  \[
+  \sembr{s}^\ph_\mathscr{S}=\sembr{s\,\theta}^\ph_\mathscr{S}
+  \]
+
+  Since $\sembr{\bullet}^\ph_\mathscr{S}$ is defined in terms of evaluation relation ``$\transrel$'' we need to prove
+  a similar claim for ``$\transrel$''. This claim on the first glance may look like the follows: for all $c,\,c^\prime\in\mathscr{C}$
+
+  \[
+  \trans{c}{s}{c^\prime}\xLeftrightarrow{\phantom{XXX}}{}\trans{c}{s\,\theta}{c^\prime}
+  \]
+
+  Alas, this does not hold in general case: let us have a statement $\llang{write ($x$)}$ and let
+  $\theta\,(x)=y$. Then for a configuration $c=\inbr{[x\mapsto 3],\,\inbr{i,\,o}}$ there is no $c^\prime$
+  such that
+
+  \[
+  \trans{c}{\llang{write ($y$)}}{c^\prime}
+  \]
+
+  since $y$ is undefined in $[x\mapsto 3]$. The problem here is that renamed statements only behave similarly to the original ones
+  in \emph{renamed} states.
+
+  The fixed claim looks like the follows: let $c=\inbr{\sigma,\,w}$ and $c^\prime=\inbr{\sigma^\prime,\,w^\prime}$ then
+
+  \[
+  \trans{c}{s}{c^\prime}\xLeftrightarrow{\phantom{XXX}}{}\trans{\inbr{\sigma\circ\theta^{-1},\,w}}{s\,\theta}{\inbr{\sigma^\prime\circ\theta^{-1},\,w^\prime}}\eqno{(\clubsuit)}
+  \]
+
+  Informally speaking here we ``repair'' states for renamed statements by first applying the \emph{inverse} renaming $\theta^{-1}$ which exists by bijectivity of $\theta$. To
+  prove this we need additional claim.
+
+  \begin{claim}[$\spadesuit$]
+    Let $e$ be an expression, $\sigma$ be a state, and $n$ be an integer number. Then
+
+    \[
+    \sembr{e}^\ph_\mathscr{E}\,\sigma=n \xLeftrightarrow{\phantom{XXX}}{}\sembr{e\,\theta}^\ph_\mathscr{E}\,(\sigma\circ\theta^{-1})=n
+    \]
+  \end{claim}
+  \begin{proof}
+    One may expect that the proof has to be performed in two directions. However, by the bijectivity of $\theta$
+
+    \[
+    \begin{array}{rcl}
+      \theta&=&(\theta^{-1})^{-1}\\
+      (e\,\theta)\,\theta^{-1}&=&e\\
+      \sigma&=&(\sigma\circ\theta^{-1})\circ\theta
+    \end{array}
+    \]
+
+    Thus, if we prove the claim from left to right, then (by arbitrariness of $e$, $\sigma$, and $\theta$) we can
+    assume
+
+    \[
+    \begin{array}{rcl}
+      e&=&e\,\theta\\
+      \sigma&=&\sigma\circ\theta^{-1}
+    \end{array}
+    \]
+
+    and the right-to-left direction will follow from left-to-right immediately.
+    
+    The proof proceeds by structural induction.
+
+    The base case is a constant or a variable. Since the semantics of constants does not depend on a state the
+    claim for constant case follows vacuously. If $e$ is a variable $x$, then:
+
+    \[
+    \begin{array}{rcl}
+      \sembr{x\,\theta}^\ph_\mathscr{E}\,(\sigma\circ\theta^{-1})&=&\mbox{(by the definition of $\sembr{\bullet}^\ph_\mathscr{E}$)}\\
+      (\sigma\circ\theta^{-1})\,(x\,\theta)&=&\mbox{(by the definition of renaming application)}\\
+      (\sigma\circ\theta^{-1})\,(\theta\,(x))&=&\mbox{(by the definition of function composition)}\\
+      ((\sigma\circ\theta^{-1})\circ\theta)\,(x)&=&\mbox{(by the associativity of function composition)}\\
+      (\sigma\circ(\theta^{-1}\circ\theta))\,(x)&=&\mbox{(by the definition of function inversion)}\\
+      \sigma\,(x)&=&\mbox{(by the condition of the claim)}\\
+      n&&
+    \end{array}
+    \]
+
+    The induction step assumes that the claim holds for some expressions $l$ and $r$; we need to prove that it also holds for
+    $l\oplus r$:
+
+    \[
+    \begin{array}{rcl}
+      \sembr{(l\oplus r)\,\theta}\,(\sigma\circ\theta^{-1})&=&\mbox{(by the definition of renaming application)}\\
+      \sembr{(l\,\theta)\oplus(r\,\theta)}\,(\sigma\circ\theta^{-1})&=&\mbox{(by the definition of $\sembr{\bullet}^\ph_\mathscr{E}$)}\\
+      \sembr{l\,\theta}\,(\sigma\circ\theta^{-1})\otimes\sembr{r\,\theta}\,(\sigma\circ\theta^{-1})&=&\mbox{(by inductive hypotheses)}\\
+      \sembr{l}\,\sigma\otimes\sembr{r}\,\sigma&=&\mbox{(by the condition of the claim)}\\
+      n&&      
+    \end{array}
+    \]
+
+    This completes the proof.
+  \end{proof}
+
+  The proof of $(\clubsuit)$ goes by structural induction as well. Similarly to the claim $(\spadesuit)$ we only need to prove it in
+  one direction (let it be left-to-right).
+
+  In the base case we have to consider four types of simple statements:
+
+  \begin{enumerate}
+  \item As $\llang{skip}$ does not change a configuration the lemma holds vacuously.
+  \item Let us have an assignment $x\llang{:=}e$. First, by the definition of renaming application
+
+    \[
+    (x\llang{:=}e)\,\theta=(\theta\,(x))\llang{:=}(e\,\theta)
+    \]
+
+    Then, by the definition of ``$\transrel$'':
+    
+    \[
+    \trans{\inbr{\sigma\circ\theta^{-1},\,w}}{(\theta\,(x))\llang{:=}(e\,\theta)}{\inbr{(\sigma\circ\theta^{-1})[\theta\,(x)\gets\sembr{e\,\theta}^\ph_\mathscr{E}\,(\sigma\circ\theta^{-1})],\,w}}
+    \]
+
+    By $(\spadesuit)$ we know that
+
+    \[
+    \sembr{e\,\theta}^\ph_\mathscr{E}\,(\sigma\circ\theta^{-1})=\sembr{e}^\ph_\mathscr{E}\,\sigma
+    \]
+
+    By the definition of substitution in a state
+
+    \[
+    (\sigma\circ\theta^{-1})[\theta\,(x)\gets\sembr{e}^\ph_\mathscr{E}\,\sigma]\,y=\left\{\begin{array}{rcl}
+                                                                                         \sembr{e}^\ph_\mathscr{E}\,\sigma&,&y=\theta\,(x)\\
+                                                                                         (\sigma\circ\theta^{-1})\,y&,&y\ne\theta\,(x)
+                                                                                       \end{array}\right.
+    \]
+
+    By the properties of functional inversion and composition and, again, using the definition of substitution in a state we have
+
+    \[
+    \left\{\begin{array}{rcl}
+                                                                                         \sembr{e}^\ph_\mathscr{E}\,\sigma&,&y=\theta\,(x)\\
+                                                                                         (\sigma\circ\theta^{-1})\,y&,&y\ne\theta\,(x)
+                                                                                       \end{array}\right.=
+   \left\{\begin{array}{rcl}
+   \sembr{e}^\ph_\mathscr{E}\,\sigma&,&\theta^{-1}\,(y)=x\\
+   (\sigma\,(\theta^{-1}\,(y))&,&\theta^{-1}\,(y)\ne x
+    \end{array}\right.=(\sigma[x\gets\sembr{e}^\ph_\mathscr{E}])\,(\theta^{-1}\,(y))
+    \]
+
+    Thus, $\sigma^\prime=\sigma[x\gets\sembr{e}^\ph_\mathscr{E}]\circ\theta^{-1}$ which completes the proof for the assignment case.
+    
+  \item Two remaining cases can be proven similarly using the observation that worlds are invariant under renaming.
+    
+  \end{enumerate}
+  
+  Finally, to prove the induction step we assume that $(\clubsuit)$ holds for statements $s_1$ and $s_2$ and we need
+  to prove
+
+  \[
+  \trans{\inbr{\sigma\circ\theta^{-1},\,w}}{s_1\llang{;}s_2}{\inbr{\sigma^\prime\circ\theta^{-1},\,w^\prime}}
+  \]
+
+  From the condition of the lemma we know
+
+  \[
+  \trule{\trans{\inbr{\sigma,\,w}}{s_1}{\inbr{\sigma^{\prime\prime},\,w^{\prime\prime}}}\quad\trans{\inbr{\sigma^{\prime\prime},\,w^{\prime\prime}}}{s_2}{\inbr{\sigma^\prime,\,w^\prime}}}
+        {\trans{\inbr{\sigma,\,w}}{s_1\llang{;}s_2}{\inbr{\sigma^\prime,\,w^\prime}}}
+  \]
+
+  for some $\sigma^{\prime\prime}$ and $w^{\prime\prime}$. Applying the induction hypotheses to the premises and then applying rule $\rulename{Seq}$ we acquire the following
+  derivation
+
+  \[
+  \trule{\trans{\inbr{\sigma\circ\theta^{-1},\,w}}{s_1}{\inbr{\sigma^{\prime\prime}\circ\theta^{-1},\,w^{\prime\prime}}}\quad\trans{\inbr{\sigma^{\prime\prime}\circ\theta^{-1},\,w^{\prime\prime}}}{s_2}{\inbr{\sigma^\prime\circ\theta^{-1},\,w^\prime}}}
+        {\trans{\inbr{\sigma\circ\theta^{-1},\,w}}{s_1\llang{;}s_2}{\inbr{\sigma^\prime\circ\theta^{-1},\,w^\prime}}}
+  \]
+
+  which proves the induction step.
+
+  Now, assume
+
+  \[
+  \trans{\inbr{\Lambda,\,\inbr{i,\,\epsilon}}}{s}{\inbr{\sigma,\,w}}
+  \]
+
+  By $(\clubsuit)$ we have
+
+  \[
+  \trans{\inbr{\Lambda\circ\theta^{-1},\,\inbr{i,\,\epsilon}}}{s\,\theta}{\inbr{\sigma\circ\theta^{-1},\,w}}
+  \]
+
+  But $\Lambda\circ\theta^{-1}=\Lambda$, which completes the proof since now we have 
+
+  \[
+  \sembr{s}^\ph_\mathscr{E}\,i=\sembr{s\,\theta}^\ph_\mathscr{E}\,i
+  \]
+
+  for arbitrary $i$ by the definition of $\sembr{\bullet}^\ph_\mathscr{E}$.
+  
+\end{proof}
+
+\begin{comment}
+First, we define the set of all \emph{free variables} $\fv{}$ in expression or statement:
+
+\[
+\begin{array}{rclcl}
+  \fv{x} &=& \{x\}&,& x\in\mathscr{X}\\
+  \fv{z} &=&\emptyset &,&z\in\mathbb{N}\\
+  \fv{l\oplus r} &=& \fv{l}\cup\fv{r}&&
+\end{array}
+\]
+
+\[
+\begin{array}{rcl}
+  \fv{\llang{skip}}&=&\emptyset\\
+  \fv{x\,\llang{:=}\,e}&=&\{x\}\cup\fv{e}\\
+  \fv{\llang{read ($x$)}}&=&\{x\}\\
+  \fv{\llang{write ($e$)}}&=&\fv{e}\\
+  \fv{s_1\llang{;}s_2}&=&\fv{s_1}\cup\fv{s_2}xs  
+\end{array}
+\]
+\end{comment}
