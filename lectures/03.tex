@@ -302,8 +302,8 @@ To reduce the use of brackets we assume that composition by default associates t
 
 \subsection{Big-Step Operational Semantics}
 
-Our next step is to define the semantics for statements. First, as always, we need to specify the semantic domain for statements' semantics.
-From the syntactic form of statements it should be clear that we are dealing with a language with \emph{side effects}: there are read and write statements,
+Our next step is to define the semantics for statements. First, as always, we need to specify the semantic domain.
+From the syntactic form of statements it should be clear that we are dealing with the language with \emph{side effects}: there are read and write statements,
 which, presumably, communicate with outer world, and assignment, which, presumably, changes the values of variables. These two kinds of side effects
 play different roles: while read and write make the effect of a program execution \emph{externally observable}, assignments define internal behavior.
 Thus, essentially different by their internal behavior programs can be indistinguishable while observed externally. We reflect this consideration by
@@ -449,7 +449,7 @@ being written in current state and put it into the output stream of the word. No
 although $\rulename{Read}$ has a premise, this premise does not contain ``$\transrel$''.
 
 Finally, the last rule $\rulename{Seq}$ prescribes the semantics for the sequential composition. This time it is
-not an axiom, and it tell us that in order to evaluate the composition of two statements we first need to
+not an axiom, and it tells us that in order to evaluate the composition of two statements we first need to
 evaluate the first one, obtaining some intermediate configuration $c^\prime$, and then the second one, using
 this intermediate configuration as input. Note, the order of evaluation is defined not by the order of
 premises, but by their nature: regardless the order in which the premises are given it is impossible
@@ -696,7 +696,7 @@ In other words, regrouping the components of composition is an equivalent transf
 
 The next property we are going to establish is that every statement can read only a finite number of input
 stream elements; this number depends only on the statement itself, and for all initial configurations with an input stream
-shorter that that number the evaluation never comes to a final configuration. Formally, we prove the following lemma:
+shorter than that number the evaluation never comes to a final configuration. Formally, we prove the following lemma:
 
 \begin{lemma}[Finite read] For any statement $s$ there is a natural number $n$ such that for every configuration $c=\inbr{\sigma,\,\inbr{i,\,o}}$
 
