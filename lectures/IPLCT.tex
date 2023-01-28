@@ -99,7 +99,7 @@ sensitive=true,
 
 
 \lstdefinelanguage{lama}{
-keywords={ignore, ref, read, write, for, true, false, fun, case, of, esac, let, in, eta, skip, import, public, infix, infixl, infixr, at, before, after, syntax, var, val, if, then, else, elif, fi, do, while, od},
+keywords={ignore, ref, read, write, for, true, false, fun, case, of, esac, let, in, eta, skip, import, public, infix, infixl, infixr, at, before, after, syntax, var, val, if, then, else, elif, fi, do, while, od, str},
 sensitive=true,
 commentstyle=\small\itshape\ttfamily,
 keywordstyle=\textbf,%\ttfamily\underline,
@@ -108,7 +108,7 @@ basewidth={0.5em,0.5em},
 columns=fixed,
 mathescape=false,
 fontadjust=true,
-literate={->}{{$\to$}}3{=>}{{$\Rightarrow$}}3{=>>}{{$\Rightarrow$\hspace{-0.7em}$\Rightarrow$}}3,
+literate={<-}{{$\gets$}}3{->}{{$\to$}}3{=>}{{$\Rightarrow$}}3{=>>}{{$\Rightarrow$\hspace{-0.7em}$\Rightarrow$}}3,
 morecomment=[s]{(*}{*)},
 basicstyle=\normalsize
 }
@@ -141,5 +141,6 @@ language=lama
 \input{01}
 \input{02}
 \input{03}
+\input{04}
 
 \end{document}
