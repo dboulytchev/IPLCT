@@ -1,0 +1,603 @@
+\chapter{Language Embedding}
+
+As we stated before, the first component of our compiler is source-level interpreter. In this chapter we
+develop such an interpreter, so far for straight-line programs language, and demonstrate, that semantic
+description formalisms used in the previous section can be seen as a specification of the interpreter at
+only slightly higher level of abstraction than actual runnable implementation.
+
+The notion of interpreter, in turn, is tightly connected with the concept of \emph{deep embedding} of one language
+into another. The symmetric concept of \emph{shallow embedding} also exists; while we do not rely on shallow embedding
+in our development for the sake of completeness we still address it in the last section of this chapter.
+
+\section{Deep Embedding}
+
+Remember, dealing with interpreters involves two languages:
+
+\begin{itemize}
+\item a \emph{target} language (the language being interpreted), and
+\item an \emph{implementation} language (the language the interpreter is written in).
+\end{itemize}
+
+Thus, we represent target programs as data structures in implementation language (representation layer) and
+then evaluate these programs using interpreter (interpretation layer). In other words, we \emph{embed}
+target language in the implementation one. This kind of embedding is called \emph{deep embedding}. In our
+case, the case of straight-line programs languages, when we have two syntactic categories~--- expressions and
+statements~--- deep embedding amounts to developing two representations and two interpreters (for expressions
+and statements respectively).
+
+\subsection{Representation Layer}
+
+The first step of deep embedding is defining the representation of programs. Previously we stipulated that any program in any language
+has a representation in the data domain $\mathfrak D$; that was rather a \emph{abstract} theoretical requirement. For deep embedding,
+however, we need to devise a \emph{concrete} representation for the \emph{programs} in one language as \emph{data structures} of another.
+The syntax of the straight-line programs language so far consists of the following elements:
+
+\[
+\begin{array}{rcl}
+  \mathscr{X} & : &\mbox{variables}\\
+  \otimes     & : &\mbox{binary operators}\\
+  \mathbb{N}  & : &\mbox{natural numbers}\\
+  \mathscr{E} & : &\mbox{expressions}\\
+  \mathscr{S} & : &\mbox{statements}
+\end{array}
+\]
+
+We need to devise a representation of each of them in the implementation lenguage, i.e. \lama. It can be done in various ways;
+the simplest one is as follows:
+
+\begin{itemize}
+\item variables and binary operators are represented by strings (thus, ``$x$'' becomes \lstinline|"x"| and ``$*$'' becomes \lstinline|"*"|);
+\item natural numbers are represented by themselves.
+\end{itemize}
+
+The most natural way to represent abstract syntax trees ($\mathscr E$ and $\mathscr S$) in \lama is by using S-expressions. We can specify the
+``shape'' of S-expressions to represent the categories of expressions and statements in our language as follows (see Fig.~\ref{expr-stmt-repr}).
+
+\begin{figure}[h]
+\[
+\begin{array}{rcl}
+  expr &=& \llang{Var$\;\;\;\;\;\:$($string$)}\\
+       & & \llang{Const ($int$)}\\
+       & & \llang{Binop ($string$, $\,expr$, $\,expr$)}\\[2mm]      
+  stmt &=& \llang{Skip}\\
+       & & \llang{Assn$\;\;\;\;$($string$, $\,expr$)}\\
+       & & \llang{Read$\;\;\;\;$($string$)}\\
+       & & \llang{Write ($expr$)}\\
+       & & \llang{Seq$\quad\:\:\,$($stmt$, $\,stmt$)}
+\end{array}
+\]
+\caption{Representation of expressions and statements}
+\label{expr-stmt-repr}
+\end{figure}
+
+One may notice that this specification almost literally repeats the AST definitions for corresponding syntactic
+categories. This is not a coincidence~--- S-expressions are known to represent such data structures particularly
+well. This specification can be understood as a constraint which describes a certain invariant all representations
+of ASTs should comply with. In fact we can even reify this constraint into the following two
+verification functions:
+
+\begin{lstlisting}[mathescape=true]
+  fun exprWF (e) {
+    case e of
+      Var   (#str)       ->$\;$true
+    | Const (#val)       ->$\;$true
+    | Binop (#str, l, r) ->$\;$exprWF (l) && exprWF (r)  
+    | _                  $\:\,$->$\;$false
+    esac
+  }
+
+  fun stmtWF (s) {
+    case s of
+      Skip            ->$\;$true
+    | Assn  (#str, e)$\:$->$\;$exprWF (e)
+    | Read  (#str)$\quad\;\;\:$->$\;$true
+    | Write (e)       ->$\;$exprWF (e)
+    | Seq   (l, r)    ->$\;$stmtWF (l) && stmtWF (r)
+    | _             $\:\:\,$ ->$\;$false
+    esac
+  }
+\end{lstlisting}
+
+These functions being appied to an arbitrary \lama value return \lstinline|true| if and only if this
+value is a \emph{well-formed} AST for expression or statement respectively.
+
+One may notice that our representation does not impose the strongest possible constraints: for example, it does not
+prohibit to use invalid binary operators like \lstinline|"???"| or variables like \lstinline|"..."|. While
+this is generally true we have to stress that the strength of representation constraints is not an objective in itself.
+
+Constraints of this kind are otherwise known as \emph{types}. For languages with \emph{static typing} their compilers
+provide a compile-time guarantee that type constraints are never violated; for \emph{dynamically-typed}
+languages type constraints are checked at runtime; finally, for \emph{untyped} languages (including \lama)
+neither compiler nor runtime support provide any essential ensurance of this kind. All three approaches
+have their strong and weak points, and we are not going to lean to either side. We only stress that in the
+untyped case we still can work with well-structured data, and further we will use the descriptions
+like those in Fig.~\ref{expr-stmt-repr} to specify what kind of values we are dealing with.
+
+With all details of program representation defined we can encode straight-line programs as \lama data structures;
+an example of a program and its corresponding representation is given in Fig.~\ref{repr-example}.
+This in principle already gives us everithing we need; however we may do the embedding a little more
+convenient to deal with. For this we first \emph{redefine} all standard \lama binary operators to
+work with \emph{syntax trees} instead of numbers:
+
+\begin{figure}[t]
+\begin{tabular}{p{2.5cm}|p{8cm}}
+\begin{lstlisting}[basicstyle=\small]
+   read (x);
+   read (y);
+   z := x + y;
+   write (z)
+\end{lstlisting} &
+\begin{lstlisting}[mathescape=true,basicstyle=\small]
+   Seq (
+     Read ("x"),
+     Seq  (
+       Read ("y"),
+       Seq  (
+         Assn  ("z", Binop ("+", Var ("x"), Var ("y"))),
+         Write (Var ("z"))
+   )))
+\end{lstlisting}
+\end{tabular}
+\caption{An example program and its representation}
+\label{repr-example}
+\end{figure}
+
+\begin{lstlisting}[mathescape=true]
+   infixl +  at +  (l, r) {Binop ("+",  opnd (l), opnd (r))}
+   infixl -  at -  (l, r) {Binop ("-",  opnd (l), opnd (r))}
+   infixl *  at *  (l, r) {Binop ("*",  opnd (l), opnd (r))}
+   infixl /  at /  (l, r) {Binop ("/",  opnd (l), opnd (r))}
+   infixl %  at %  (l, r) {Binop ("%",  opnd (l), opnd (r))}
+   infix  == at == (l, r) {Binop ("==", opnd (l), opnd (r))}
+   infix  != at != (l, r) {Binop ("!=", opnd (l), opnd (r))}
+   infix  <  at <  (l, r) {Binop ("<",  opnd (l), opnd (r))}
+   infix  <= at <= (l, r) {Binop ("<=", opnd (l), opnd (r))}
+   infix  >  at >  (l, r) {Binop (">",  opnd (l), opnd (r))}
+   infix  >= at >= (l, r) {Binop (">=", opnd (l), opnd (r))}
+   infixl && at && (l, r) {Binop ("&&", opnd (l), opnd (r))}
+   infixl !! at !! (l, r) {Binop ("!!", opnd (l), opnd (r))}
+
+   fun opnd (x) {
+     case x of
+       #str -> Var   (x)
+     | #val -> Const (x)
+     | _$\qquad\,$-> x
+     esac
+   }
+\end{lstlisting}
+
+Now, any standard binary operator instead of actually performing designated arithmetic operation will
+construct corresponding expression AST. We assume that the arguments of these redefined operators
+can be either natural numbers (designating themselves), strings (designating variables) or other
+expression ASTs. A supplementary function \lstinline|opnd| is used to consrtruct a well-formed AST
+for the operands of the first two forms.
+
+Of course as soon as these definitions are introduced the ``old'' standard operators become inaccessible in
+the same scope; however this limitation can be easily worked around, which we leave to the reader as an exercise.
+
+Second, we provide similar AST-constructing primitives for statements:
+
+\begin{lstlisting}[mathescape=true]
+   fun $\mbox{\texttt{read}}$ (x) {
+     Read (x)
+   }
+
+   fun $\mbox{\texttt{write}}$ (e) {
+     Write (opnd (e))
+   }
+
+   infix ::= before := (x, e) {
+     Assn (x, opnd (e))
+   }
+
+   infixr >> before ::= (s1, s2) {
+     Seq (s1, s2)
+   }
+\end{lstlisting}
+
+Since neither ``\lstinline|;|'' nor ``\lstinline|:=|'' can be redefined in \lama, we devised a slightly difference
+syntax for assignment (``\lstinline|::=|'') and sequential composition (``\lstinline|>>|''). Now in the scope of
+these definitions we can write straight-line programs in just a little different concrete syntax than that for
+the actual \lama: we need to use ``\lstinline|::=|'' instead of ``\lstinline|:=|'', ``\lstinline|>>|'' instead
+of ``\lstinline|;|'' and take variables' names in quotes. Thus, the following \lama expression
+
+\begin{lstlisting}[mathescape=true]
+   $\mbox{\texttt{read}}$ ("x") >>
+   $\mbox{\texttt{read}}$ ("y") >>
+   "z" ::= "x" + "y" >>
+   $\mbox{\texttt{write}}$ ("z")
+\end{lstlisting}
+
+will be evaluated to exactly the same representation as in Fig.~\ref{repr-example}.
+
+One may argue that in this concrete case we carefully staged all the things in advance in order to make deep embedding
+looking so nice. While, indeed, the very idea of \lama development originates from the desire to have a
+language which would allow to easily demonstrate all relevant concepts and techniques in their direct form, the
+features we used here (S-expressions and user-defined binary operators) are by no means rare or exotic.
+They can be found in one or another form in many real-world production languages, and if some of them are missing the
+replacement can easily be found. On the contrary, modern languages are often equipped with specific features and
+tools (syntax extension mechanisms, preprocessors, hygienic macro systems, etc.) which \lama does not have and which facilitate
+the development of \emph{domain-specific languages} (DSLs), a valuable technique many software projects can benefit from.
+
+\subsection{Interpretation Layer}
+
+Similarly to the representation layer for the interpretation one we need to provide implementations for all components of
+lanaguage semantics and all relevant objects and operations. In our case these components are:
+
+\[
+\begin{array}{ccl}
+  St                            & - & \mbox{states}\\
+  \mathscr{W}                   & - & \mbox{worlds}\\
+  \mathscr{C}                   & - & \mbox{configurations}\\
+  \sembr{\bullet}^\ph_\mathscr{E} & - & \mbox{semantics for expressions}\\
+  \transrel                     & - & \mbox{big-step evaluation relation}\\
+  \sembr{\bullet}^\ph_\mathscr{S} & - & \mbox{semantics for statements}
+\end{array}
+\]
+
+Luckily, corresponding \lama implmentations are rather straightforward.
+
+We will represent states as regular \lama functions; we also need implementations for empty state $\Lambda$ and
+substitution operation $\bullet\,[\bullet\gets\bullet]$:
+
+\begin{lstlisting}
+   fun emptyState (x) {
+     failure ("undefined variable ""%s""\n", x)
+   }
+
+   infix <- before : (st, [x, v]) {
+     fun (y) {
+       if x = y then v else st (y) fi
+     }
+   }
+\end{lstlisting}
+
+Note, \lstinline|emptyState| kindly says us it is undefined on each variable instead of crushing. There were no such
+requirement in semantic description but from a software engineering standpoint it is always better to explicitly indicate
+a problem instead of going to hell in a solemn silence. For substitution we provide an infix operator; since there are
+no ternary operators in \lama we specify a variable-value pair as its second operand; thus instead of
+$s\,[x\gets v]$ we will write \lstinline[mathescape=true]|$s$ <- [$x$, $v$]|.
+
+We will represent worlds as pairs of input/output streams, and streams as lists of integers. The implementation for
+world primitives is straighforward as well:
+
+\begin{lstlisting}
+   fun createWorld (input) {
+     [input, {}]
+   }
+
+   fun writeWorld (n, [input, output]) {
+     [input, n:output]
+   }
+
+   fun readWorld ([n:input, output]) {
+     [n, [input, output]]
+   }
+
+   fun getOutput ([_, output]) {
+     reverse (output)
+   }
+\end{lstlisting}
+
+Function \lstinline|createWorld| makes a fresh world from initial input stream; functions \lstinline|readWorld|, \lstinline|writeWorld|, and \lstinline|getOutput|
+are implementations of world primitives $\primi{read}$, $\primi{write}$, and $\primi{out}$ respectively. Note, in the implementation we hold output stream
+in the \emph{reverse} order (since it is slightly easier to add elements to the beginning of a list than to the end), and reverse it before extracting.
+
+Now we may proceed with interpreter implementation for expressions. It worth mentioning that denotational semantics approach, which we used for expressions, conventionally
+rarely used to implement interpreters as it provides a too abstract, high-level view on the semantics. In a number of cases such an interpreter can not be
+implemented at all due to fundamental undecidability of what denotational semantics specifies (for example, there can be no refulationally complete interpreter
+for \textsc{Prolog} while its denotational semantics, the least Herbrand model, can easily be described). However, in our case of simple arithmetic expressions
+denotational semantics is so simple that constructing a coherent interpreter is trivial.
+
+\begin{figure}[t]
+  \begin{lstlisting}
+   fun evalExpr (expr) {
+     case expr of
+       Var   (x)        -> fun (st) {st (x)}
+     | Const (n)        -> fun (st) {n}
+     | Binop (op, l, r) -> fun (st) {
+                               evalOp (op)(
+                                 evalExpr (l)(st),
+                                 evalExpr (r)(st))
+                             }
+     esac
+   }
+  \end{lstlisting}
+  \caption{Expression interpreter, top-level function}
+  \label{exprint-toplevel}
+\end{figure}
+
+The top-level function for expression interpreter, \lstinline{evalExpr}, is shown in Fig.~\ref{exprint-toplevel}. Recall, in denotational semantics we specified a function
+from states to integer numbers for each possible form of expression, and we discriminated between these forms using different (and mutually-exclusive) equations.
+In \lama these equations are encoded almost literally using pattern-matching in the form of case expression. The branches of this case expression
+correspond to the right-hand sides of the semantic equations:
+
+\begin{itemize}
+\item If the expression being evaluated is a variable, then we return an integer value the current state \lstinline|st| associates with this variable; remember, we
+  represent states by functions, so it is sufficient to simply make a call to \lstinline|st|.
+\item For a constant expression, we return integer value \lstinline|n| this expression designates.
+\item For binary operator we, first, evaluate the values of its left (\lstinline|l|) and right (\lstinline|r|) operands using recursive calls to \lstinline|evalExpr|. These
+  recursive calls precisely correspond to denotational brackets in the right-hand side of relevant equation. Then, we combine these values in a way binary operator
+  sign \lstinline|op| prescribes. For this we use a supplementary function \lstinline|evalOp|, which encodes the syntactic-to-semantic correspondence shown in the table
+  on the page~\pageref{times-plus-tab}.
+\end{itemize}
+
+The implementation of \lstinline|evalOp| is shown in Fig.~\ref{binary-int}. We first construct a table \lstinline|ops| which encodes a correspondence between syntactic representations
+of binary operators and their semantic counterparts\footnote{Of course this should be done in a \emph{different} scope than that in which we redefined all standard binary
+operators in order to implement deep embedding.}; then we construct a function which takes a syntactic representation of a binary operator as a string, searches the table and
+returns corresponding function (or signals an error if no such function is found).
+
+\begin{figure}[t]
+  \begin{lstlisting}
+   val evalOp =
+     let ops = {["+" , infix + ],
+                ["-" , infix - ],
+                ["*" , infix * ],
+                ["/" , infix / ],
+                ["%" , infix % ],
+                ["==", infix ==],
+                ["!=", infix !=],
+                ["<" , infix < ],
+                ["<=", infix <=],
+                [">" , infix > ],
+                [">=", infix >=],
+                ["&&", infix &&],
+                ["!!", infix !!]}
+     in
+     fun (op) {
+       case assoc (ops, op) of
+         Some (f) -> f
+       | _        -> failure ("undefined binary operator ""%s""", op)
+       esac  
+     };
+  \end{lstlisting}
+  \caption{Binary operators interpreter}
+  \label{binary-int}
+\end{figure}
+
+We now can switch to the implementation of big-step interpreter for statements. Obviously, the main work is to encode the big-step evaluation
+relation ``$\transrel$''. We implement it as a function \lstinline|evalStmt| (Fig.~\ref{bigint}) which takes initial configuration and a statement
+and returns final configuration (if any). Again, in the specification of big-step operational semantics different rules handle different
+forms of statements. In implementation, the same work is done by pattern-matching, and different branches of case expression correspond to
+different rules of the semantics:
+
+\begin{itemize}
+\item For skip statement, we just return current configuration.
+\item For assignment, we first evaluate its right-hand side expression \lstinline|e| in current state, modify current state using binary
+  operator ``\lstinline|<-|'' and return modified configuration.
+\item For read and write statements we use corresponding primitives for worlds and return modified configurations.
+\item Finally, for sequential composition we calculate the composition of evaluator applications.
+\end{itemize}
+
+Finally, the top-level interpreter just calls for \lstinline|evalStmt|, constructing initial configuration, and returning
+the output stream from the final one:
+
+\begin{lstlisting}
+   fun eval (stmt, input) {
+     getOutput $ evalStmt ([emptyState, createWorld (input)], stmt) 
+   }
+\end{lstlisting}
+
+And, again, this function literally encodes the rule for $\sembr{\bullet}_{\mathscr{S}}$ on page~\pageref{surface-semantics}.
+
+Now with this interpreter we can run straight-line programs. We take as an example a summation program already considered
+to illustrate how deep embedding works. We can evaluate the result of this program for the input stream "\lstinline|{2, 3}|":
+
+\begin{lstlisting}[mathescape=true]
+   printf ("%s\n", evalStmt ($\mbox{\texttt{read}}$ ("x") >>
+                              $\mbox{\texttt{read}}$ ("y") >>
+                              "z" ::= "x" + "y" >>
+                              $\mbox{\texttt{write}}$ ("z"),
+                             {2, 3}
+                   )
+   )
+\end{lstlisting}
+
+This will print "\lstinline|{5}|", of course.
+
+In future we will refrain from giving such detailed comments on constructing interpreters from operational semantics
+description. We did it here for the first time to demonstrate that semantic rules can be directly encoded
+in a programmatical implementation. Later we will leave the development of interpreters to the reader, only
+giving a high-level implementation hints.
+
+\begin{figure}[t]
+  \begin{lstlisting}
+   fun evalStmt (c@[s, w], stmt) {
+     case stmt of
+       Skip           -> c
+     | Assn  (x, e)   -> [s <- [x, evalExpr (e)(s)], w]
+     | Read  (x)      -> let [n,w] = readWorld (w) in
+                          [s <- [x, n], w]
+     | Write (e)      -> [s, writeWorld (evalExpr (e)(s), w)]
+     | Seq   (s1, s2) -> evalStmt (evalStmt (c, s1), s2)    
+     esac
+   }
+  \end{lstlisting}
+  \caption{Big-step semantics interpreter}
+  \label{bigint}
+\end{figure}
+
+\subsection{Metacircularity and Towers of Interpreters}
+
+The interpreter we presented in the previous section implements a subset of \lama in \lama. When an interpreter of
+a language is implemented in this language itself it is called a \emph{self}-interpreter, or \emph{meta-circular}
+interpreter. Metacircularity is another way to specify the semantics of a language: indeed, an implementation
+of an interpreter delivers the same amount of knowledge (if not more) as operational semantics, and the
+language itself serves as a metalanguage. On the other hand, the whole idea of expressing the semantics of
+a language in terms of the semantics of the same language looks vacuous at the first glance: indeed, if we
+already understand the semantics there is no need to specify it in the form of an interpreter, and if not then how
+can we implement an interpreter in a language which semantics we do not fully understand? The answer is that we can
+use some small subset of the language which semantics we understand well enough to implement the interpreter of
+the full language. Thus the semantics of complicated constructs becomes encoded in terms of simpler
+ones. 
+
+Another interesting concept which arises naturally is \emph{tower of interpreters}. Let us have a self-interpreter,
+say an interpreter of \lama implemented in \lama. This interpreter can run arbitrary \lama programs, including \emph{itself}.
+This construct can be generalized: we can have an interpreter for a language $L_2$ written in a language $L_1$, and
+interpreter for $L_3$ written in $L_2$, etc. Thus we can run $L_3$-program on $L_3$-interpreter running as $L_2$-program
+on $L_2$-interpreter running as $L_1$-program on $L_1$-interpreter, etc. We may wonder why someone would wish to use such an
+exotic appliance. The answer is that, first, like in the metacircular case, these languages can have different expressive power
+and different complexity. We may take some very simple language and implement an interpreter for more complex one, etc.
+Thus we can eventually come up with a very advanced language, but in a number of steps with moderately
+increasing complexity which may be desirable from an engineering standpoint. What is more important is that
+the properties of the semantics and runtime environment of interpreter implementation language
+to some extend are inherited for the language being interpreted. For example, let's assume that we have a profiler for some
+language $L_1$. If we implement an interpreter for $L_2$ in $L_1$ we will acquire a profiler for $L_2$ for free~--- indeed,
+we will only need to map the profiling points in the interpreter for $L_2$ to the points of a program being interpreted.
+
+Tower of interpreters is a nice theoretical construct, an interesting research subject and at the same time a
+convenient engineering tool.
+
+
+\section{Shallow Embedding}
+
+Shallow embedding is an alternative way to implement one language ``on top'' of another. In contrast to deep embedding, when
+we first construct a representation of a program being embedded and then run it on an interpreter, in shallow case we
+represent the constructs of embedded language directly in an executable form. We demonstrate this technique by
+repeating the job of implementing an embedding of a straight-line programs languages, but now in a shallow form. As
+we dealing with the same language and the same semantics many ingredients of deep embedding~--- states, configurations, etc.~---
+will be reused in the shallow case, so we can immediately start from implementing embedding of expressions.
+
+Remember, in the previous case we devised a representation of expressions' ASTs using S-expressions; this step, however, is
+disallowed in shallow embedding. What we do instead is represent the constructs of an expressions directly as their
+semantics. In out case the semantics of an expression is a function from states to integers, which means that under
+shallow embedding each expression is represented by such a function.
+
+Let us have two expressions \lstinline|l| and \lstinline|r|; how can we build a shallow representation for, say, \lstinline|l + r|?
+Both \lstinline|l| and \lstinline|r| are functions, and we have to construct a function which, given a state, returns
+the sum of \lstinline|l (st)| and \lstinline|r (st)|. This idea gives us the following hypothetical implementation of
+binary addition encoding:
+
+\begin{lstlisting}
+   infixl +  at +  (l, r) {
+     fun (st) {
+       l (st) + r (st)
+     }
+  }
+\end{lstlisting}
+
+There are, however, two technical difficulties. First, the base cases for expressions are natural numbers and variables. It would be
+great to represent natural numbers as regular integer constants and variables as strings, but we need to represent them as functions.
+We can deal with this problem in a similar way as in the deep embedding case: in every context we expect an expression we wrap it in a function
+which tests for these corner cases and ``lifts'' integer constants and strings into functional domain:
+
+\begin{lstlisting}[mathescape=true]
+   fun opnd (e) {
+     case e of
+       #str -> fun (st) {st (e)}
+     | #val -> fun (_)  {e}
+     | _   $\,$ -> e
+     esac
+   }
+\end{lstlisting}
+
+Note, we did exactly the same in the deep embedding case, and for the same reason; the only difference is that now we lift
+primitive expressions into different domain.
+
+The second problem is that, actually, ``\lstinline|+|'' inside the definition of ``\lstinline|+|'' means itself, so instead
+of adding two numbers our function is going to loop forever. In order to overcome this problem we have, first, to provide a
+synonym to the build-in integer addition and, second, to place the redefinition of addition in a nested scope; we have to do this
+for every binary operator we redefine:
+
+\begin{lstlisting}[mathescape=true]
+   val add = infix +,
+       $\,$sub = infix -,
+       $\,$mul = infix *,
+       $\,$...       
+  
+   (
+    infixl + at + (l, r) {
+      fun (st) {
+        add (opnd (l) (st), opnd (r) (st))
+      }
+    }
+    
+    infixl - at - (l, r) {
+      fun (st) {
+        sub (opnd (l) (st), opnd (r) (st))
+      }
+    }
+    
+    infixl * at * (l, r) {
+      fun (st) {
+        mul (opnd (l) (st), opnd (r) (st))
+      }
+    }
+    ...
+   )
+\end{lstlisting}
+
+This completes the shallow embedding of expressions. Now when we write an expression built from binary operators, strings and
+constants its evaluation returns a representation of this expression in the form of a function from states to integers. For
+example, an expression
+
+\begin{lstlisting}
+   "y"*("x"+1)
+\end{lstlisting}
+
+is evaluated into the function
+
+\begin{lstlisting}
+   fun (st) {
+     mul (fun (st) {st ("y")} (st),
+          fun (st) {
+            add (fun (st) {st ("x")} (st),
+                 fun (st) {1}        (st)
+            )
+          } (st)
+     )
+   }
+\end{lstlisting}
+
+which can be simplified (by unfolding relevant definitions) into
+
+\begin{lstlisting}
+   fun (st) {st ("y") * (st ("x") + 1)}
+\end{lstlisting}
+
+Now we do not need an interpreter to evaluate this expression; we can just call it passing a relevant state as an argument.
+
+Let's repeat this job for statements. Again, all we need is to represent constructs by their semantics, this time
+a function from configurations to configurations:
+
+\begin{lstlisting}[mathescape=true]
+   fun sk1p (conf) {conf}
+  
+   fun $\mbox{\texttt{read}}$ (x) {
+     fun ([s, w]) {
+       let [n,w] = readWorld (w) in
+       [s <- [x, n], w]       
+     }
+   }
+
+   fun $\mbox{\texttt{write}}$ (e) {
+     fun ([s, w]) {
+       [s, writeWorld (w, opnd (e) (s))]
+     }
+   }
+
+   infix ::= before := (x, e) {
+     fun ([s, w]) {
+       [s <- [x, opnd (e)(s)], w]
+     }
+   }
+
+   infixr >> before ::= (s1, s2) {
+     fun (conf) {
+       s2 (s1 (conf))
+     }
+   }  
+\end{lstlisting}
+
+Note, we could not encode \lstinline|skip| statement with eponymous function since ``skip'' is a reserved word in \lama, so we used
+its contrived version ``sk1p''. Otherwise we preserved the same surface syntax as with deep embedding.
+
+One may notice that this implementation resembles the implementation of an interpreter in deep embedding case. This is, indeed, the
+case. In fact in shallow embedding we ``fuse'' representation and interpretation layers together, thus representation
+inherits the implementation of interpreter.
+
+Thus, shallow embedding makes it possible to reduce interpretation overhead (but not eliminate is completely: we still
+express the semantics in the terms of states and configurations with precisely the same encoding as in the
+deep embedding case). On the other hand, shallow embedding makes it harder (but not completely impossible) to
+implement \emph{transformations} of embedded programs. Deep and shallow embeddings are two sides of the same coin, and
+in different scenarios both of them can reveal their merits.
