@@ -1,3 +1,9 @@
-\chapter{A Compiler to \textsc{x86/32}}
+\chapter{A Compiler for \textsc{x86/32}}
 
-In this section, finally, we will consider a codegenerator for \textsc{x86/32} processor. 
+In this section, finally, we will consider a codegenerator for \textsc{x86/32} processor, the principal study object of the whole course. In this particular chapter we will only deal with the simplest compiler for straight-line programs language, but as the source languge evolves the native-code compiler will get more and more features.
+
+Of course the main question for now is what implementing a native-code compiler amounts to. Luckily, as we will see shortly, this task is not much different from what we already can do. In order to turn our source program into machine code we only need to convert in into a text in an \emph{assembly} language. Then we entrust the \textsc{GCC} toolchain to make the rest of the work~--- compile this assembly program into object file, link (multiple) compiled object files and some libraries into executable, etc. This approach is by no means exotic~--- nowdays the majority of compilers are implemented exactly following this roadmap which makes it possible to reuse all stages of compilation starting from object file generation by many compilers (and thus avoid of making a lot of similar errors anew).
+
+An important methodological point of what we are going to do is that we \emph{will not} discuss the operational semantics of the assembly language. The motivation is that this language is very similar in its generic features to stack machine language, which we already dealt with. On the other hand there is a lot of tiny trivial details in assembly programming which would make formal description boring and cumbersome, so we better discuss them in informal terms. But the approach we take here doest not mean that assembly languages cannot be properly described in formal terms, and there are lots of witnesses of the contrary.
+
+
