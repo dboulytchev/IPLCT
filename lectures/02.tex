@@ -268,7 +268,7 @@ its semantics (a function in the data domain).
 Our first step is to apply a specializer $\Spec{L}{M}$ to some interpreter $\Int{N}{L}$ and some program $\primi{p}^\ph_\mathcal{N}$ it can interpret:
 
 \[
-\sembr{\underline{\SpecS{L}{M}\,(\Int{N}{L}\times \primi{p}^\ph_\mathcal{N})}}^\ph_\mathcal{L}\,(x)=\IntS{N}{L}\,(\primi{p}^\ph_\mathcal{N}\times x)=\sembr{\underline{\primi{p}^\ph_\mathcal{N}}}^\ph_\mathcal{N}\,(x)\eqno{(I)}
+\sembr{\underline{\SpecS{L}{M}\,(\Int{N}{L}\times \primi{p}^\ph_\mathcal{N})}}^\ph_\mathcal{L}\,(x)=\IntS{N}{L}\,(\primi{p}^\ph_\mathcal{N}\times x)=\sembr{\underline{\primi{p}^\ph_\mathcal{N}}}^\ph_\mathcal{N}\,(x)\tag{I}
 \]
 
 The first equality follows immediately from $(\star\star\star)$ while the second~--- immediately from $(\star)$. Let's now look at the underlined parts. The \emph{right} one is, obviously,
@@ -287,24 +287,24 @@ Next, let's specialize a specializer for an interpreter:
   \sembr{\primi{p}^\ph_\mathcal{N}}^\ph_\mathcal{N}\,(x)\tag{II}
 \end{multline*}
 
-The first equation, again, immediately follows from $(\star\star\star)$, while the second~--- from $(I)$. If we look at the underlined part long enough, it becomes
+The first equation, again, immediately follows from $(\star\star\star)$, while the second~--- from (I). If we look at the underlined part long enough, it becomes
 evident that it is a program in the language $\mathcal{M}$ which satisfies the equation $(\star\star)$, i.e. a compiler $\Comp{N}{L}{M}$. This is a second Futamura projection:
 
 \begin{quote}
-  \emph{The specialization of a specializer to an interpreter gives a compiler from the interpreting language to the language of interpreter implementation.}
+  \emph{The specialization of a specializer for an interpreter gives a compiler from the interpreting language to the language of interpreter implementation.}
 \end{quote}
 
 Finally, we can specialize a specializer to a specializer:
 
 \[
-  \sembr{\SpecS{K}{T}\,(\Spec{M}{K}\times\Spec{L}{M})}^\ph_\mathcal{T}\,(\Int{N}{L})=\SpecS{M}{K}\,(\Spec{L}{M}\times\Int{N}{L})\eqno{(III)}
+  \sembr{\SpecS{K}{T}\,(\Spec{M}{K}\times\Spec{L}{M})}^\ph_\mathcal{T}\,(\Int{N}{L})=\SpecS{M}{K}\,(\Spec{L}{M}\times\Int{N}{L})\tag{III}
 \]
 
-The equation immediately follows from $(\star\star)$; its right part, according to $(II)$, is $\Comp{N}{L}{M}$. This is the
+The equation immediately follows from $(\star\star)$; its right part, according to (II), is $\Comp{N}{L}{M}$. This is the
 third Futamura projection:
 
 \begin{quote}
-  \emph{The specialization of a specializer to a specializer gives a compiler generator which for an interpreter generates a compiler from
+  \emph{The specialization of a specializer for a specializer gives a compiler generator which for an interpreter generates a compiler from
   the interpreting language to the language of interpreter implementation.}
 \end{quote}
 
