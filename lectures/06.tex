@@ -55,9 +55,17 @@ invisible for a regular application, which means that a compiler in the \emph{ma
 these subsystems. Moreover, a compiler as a rule does not deal with a certain part of hardware functionality and instruction set just
 because the source language does not have corresponding abstractions. Finally, as a regular interpreter can be implemented in
 various ways even using the same implementation language, hardware platforms also can have different implementations while sharing
-the same ``surface'' architecture and instruction set. 
+the same ``surface'' architecture and instruction set. This surface, or \emph{macroarchitecture} of \textsc{x86/32} is a subject
+of our close attention in this chapter. But, first, we consider the very principles digital programmable hardware is based on.
 
+\subsection{Principles of Digital Hardware Organization}
 
+Digital hardware in the vast majority of versions operates on \emph{binary} data. In this form all sorts of data a computer
+deals with is represented as sequences of integer numbers in binary representation, i.e. in a regular positional
+encoding radix 2; we assume the reader's familiarity with this construct. The advantage of this representation
+is that it only requires from a physical system representing one digit to be in one of two stable states. In real
+hardware these two states (0 and 1) are usually represented as different voltage levels measured against some
+baseline (ground).
 
 
 
