@@ -19,8 +19,8 @@ discuss the operational semantics of the assembly language. The motivation is th
 in its generic features to stack machine language, which we already dealt with. As we generate native code from
 stack machine, the compiler assumed to be very simple, and its formal description is expected to be superfluous.
 On the other hand there are a lot of tiny simple details in machine architecture which would make formal description
-boring and cumbersome, so we better discuss them in informal terms. But this does not mean that assembly languages c
-annot be properly described in formal terms, and there are lots of witnesses of the opposite.
+boring and cumbersome, so we better discuss them in informal terms. But this does not mean that assembly languages
+cannot be properly described in formal terms, and there are lots of witnesses of the opposite.
 
 \section{Hardware Architecture}
 
@@ -36,7 +36,7 @@ domain to the minimal extent needed to understand the essence of computations pe
 \end{figure}
 
 From a birds-eye view a hardware computer consists of \emph{memory}, \emph{central processor unit} (CPU), and
-\emph{input-output} subsystem. This very general decomposition is known under the name ``von Neumann architecture'' named
+\emph{input-output} subsystem. This very general decomposition is called ``von Neumann architecture'' named
 after John von Neumann. In von Neumann architecture programs are kept in the same memory as data; this is
 sometimes contrasted to so-called \emph{Harvard architecture} where a separate memory is dedicated solely to
 keep programs. While the majority of general-purpose computers follow von Neumann architecture the Harvard one can be
@@ -60,12 +60,180 @@ of our close attention in this chapter. But, first, we consider the very princip
 
 \subsection{Principles of Digital Hardware Organization}
 
-Digital hardware in the vast majority of versions operates on \emph{binary} data. In this form all sorts of data a computer
-deals with is represented as sequences of integer numbers in binary representation, i.e. in a regular positional
+Digital hardware in the vast majority of cases operates on \emph{binary} data. In this form all sorts of data a computer
+deals with is represented as sequences of integer numbers in binary representation, i.e. in some variant of positional
 encoding radix 2; we assume the reader's familiarity with this construct. The advantage of this representation
 is that it only requires from a physical system representing one digit to be in one of two stable states. In real
 hardware these two states (0 and 1) are usually represented as different voltage levels measured against some
-baseline (ground).
+baseline (ground). Binary representation, however, is not a unique solution from either historical or practical
+standpoint: for example, the Babbage's analytical machine (the first known, yet unfinished, project of
+a Turing-complete computational device) was designed to operate on decimal numbers, and many modern hardware
+digital architectures (including \textsc{x86}) support so-called binary-decimal representation in which
+a group of four bits represents (with some redundancy) one decimal digit.
+
+To understand how a hardware can perform computations we first consider a simplest possible arithmetic operation: the
+addition of two one-bit numbers $x$ and $y$. As there are only four combinations of all possible values for $x$ and $y$
+the result of $x+y$ can be summarized with the following \emph{finite} table:
+
+\[
+\begin{array}{cc||c|c}
+  x & y & carry\,(x + y) & x\dotplus y \\
+  \hline
+  0 & 0 & 0 & 0   \\
+  0 & 1 & 0 & 1   \\ 
+  1 & 0 & 0 & 1   \\
+  1 & 1 & 1 & 0 
+\end{array}
+\]
+
+The somewhat unexpected extra column contains so-called \emph{carry bit}. Indeed, the sum of two one-bit numbers sometimes occupies
+more than one bit: 1+1=2(decimal)=10(binary). In general case the result of addition of two $n$-bit numbers can (at most) occupy
+$n+1$ bit. When we limit the size of numbers by, say, 32 bits we can eventually arrive at a situation when the result of some
+computation can no longer be represented by a 32-bit number. In such case an extra, 33th carry bit can be used to
+identify an overflow, a situation when further computations start to delived unreliable results.
+
+Thus, in a general case the addition of two one-bit numbers delivers \emph{two} bits: the carry one and the partial sum (hence the
+denotation ``$\dotplus$'').
+If we look closely at the table above we can discover that the carry bit is the conjunction of the operands and the partial
+sum is exclusive or:
+
+\[
+\begin{array}{rcl}
+  carry\,(x + y) & = & x\wedge y\\
+  \phantom{(}x\dotplus y\phantom{)} & = & x\oplus y
+\end{array}
+\]
+
+This constitutes an important observation: we will be able to perform arithmetic computations in hardware as long as we manage to implement
+boolean operators. There is a whole theory of \emph{boolean circuits} which studies the theoretical properties of computations
+performed by the networks of interconnected primitive boolean connectives.
+
+Let us assume that we, indeed, can implement boolean operations using some primitive hardware units (\emph{gates}); depict those as
+shown in Fig.~\ref{gates}. Each gate has two \emph{inputs} (wires on the left side) and one \emph{output} (a wire on the right side). 
+Then the following interconnection of gates constitutes a one-bit \emph{adder}:
+ 
+\begin{figure}[t]
+  \begin{subfigure}[t]{0.3\textwidth}
+    \centering
+    \includegraphics[scale=0.6]{images/06-01.eps}
+    \caption{``xor''}
+    \label{gates-xor}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.3\textwidth}
+    \centering
+    \includegraphics[scale=0.6]{images/06-02.eps}
+    \caption{``and''}
+    \label{gates-and}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.3\textwidth}
+    \centering
+    \includegraphics[scale=0.6]{images/06-03.eps}
+    \caption{``or''}
+    \label{gates-or}
+  \end{subfigure}
+  \caption{Logical gates}
+  \label{gates}
+\end{figure}
+
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.6]{images/06-04.eps}  
+\end{figure}
+
+Indeed, this simple circuit literally encodes the table for ont-bit addition.
+
+Imagine now that we want to add two \emph{two-bits} numbers $x_1x_0$ and $y_1y_0$. By the very nature of
+binary positional encoding these two-bits numbers represent natural numbers $2\times x_1+x_0$ and
+$2\times y_1+y_0$. Let us calculate their sum:
+
+\[
+2\times x_1 + x_0 + 2\times y_1+y_0 = 2\times (x_1+y_1) + (x_0+y_0)
+\]
+
+But, again, we have to make sure that all coefficients of the degrees of 2 are either 0 or 1; in the
+expression above this requirement can be violated (take $x_0=y_0=1$). To fix this remember that we
+can express the results of one-bit additions $x_1+y_1$ and $x_0+y_0$ in terms of partial sums and carry bits.
+The easiest way to sort things out is to determine which coefficients of degrees of 2 these bits
+contribute to:
+
+\begin{itemize}
+\item $x_0\dotplus y_0$ contributes to the coefficient of $2^0$;
+\item $carry\,(x_0+y_0)$ contributes to the coefficient of $2^1$;
+\item $x_1\dotplus y_1$ also contributes to the coefficient of $2^1$;
+\item $carry\,(x_1+ y_1)$ contributes to the coefficient of $2^2$;
+\end{itemize}
+
+Thus, $x_0\dotplus y_0$ gives us the least significant bit of the overall sum. As both $carry\,(x_0+y_0)$ and 
+$x_1\dotplus y_1$ contribute to the same coefficient, we have to add them as well, obtaining yet another
+partial sum and carry bits. The partial sum
+
+\[
+(carry\,(x_0+y_0))\dotplus(x_1\dotplus y_1)
+\]
+
+now is the only bit contributing to the coefficient of $2^1$ (i.e. second-to-the least significant bit of the
+overall sum). However, the carry bit
+
+\[
+carry\,(carry\,(x_0+y_0), x_1\dotplus y_1)
+\]
+
+now contributes to the coefficient of $2^2$ and has to be added to $carry\,(x_1+ y_1)$, which would potentially
+give us another two bits. Fortunately, it can be easily observed that
+
+\[
+carry\,(carry\,(x_0+y_0), x_1\dotplus y_1)
+\]
+
+and
+
+\[
+carry\,(x_1+y_1)
+\]
+
+can never be equal 1 at the same time. Indeed, let $carry\,(x_1+y_1)=1$. But then $x_1\dotplus y_1=0$, and
+$carry\,(carry\,(x_0+y_0), x_1\dotplus y_1)=0$. Thus, their sum is just a disjunction.
+
+These observations can be summarized with the following boolean circuit for \emph{two-bits adder}:
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.7]{images/06-05.eps}
+\end{figure}
+
+Here encircled nodes abbreviate one-bit adders with horizontal output edges associated with carry bits and
+vertical ones~--- with partial sum bits. With proper efforts (and enough time) these nodes can be substituted
+by the actual circuits for one-bit adders which would give a complete decomposition for two-bit adder in terms of
+primitive gates.
+
+Use similar ideas we can scale up the expressive power of boolean circuits almost infinitely. Combining two-bit adders
+gives us three-bit adders, etc. Being capable of adding numbers we can express multiplication (as multiplication of
+finite numbers can be expressed in terms of finite number of additions); using the representation in binary complement
+form we can use complement and addition for subtraction, which allows us to express division and taking a reminder, etc.
+Finally, we can easily express conditional calculations in binary logic: let us have a one-bit condition (``true'' or ``false'') $c$ and
+two $n$-bit numbers $x=x_{n-1}\dots x_0$ and $y=y_{n-1}\dots y_0$. Then
+
+\[
+(x_{n-1}\wedge c)\dots(x_0\wedge c) \vee (y_{n-1}\wedge \neg c)\dots(y_0\wedge \neg c) 
+\]
+
+corresponds to a conditional construct
+
+\begin{lstlisting}[mathescape=true]
+    if $c$ then $x$ else $y$ fi
+\end{lstlisting}
+
+Generalizing this construct we can implement a choice of one from $2^n$ values depending on $n$-bit condition, which
+gives us an implementation of memory. Thus, with just a few types of logical gates we can implement an impressive
+variety of computation.
+
+But how the gates themselves can be implemented?
+
+
+
+
+
 
 
 
