@@ -208,7 +208,7 @@ by the actual circuits for one-bit adders which would give a complete decomposit
 primitive gates.
 
 Use similar ideas we can scale up the expressive power of boolean circuits almost infinitely. Combining two-bit adders
-gives us three-bit adders, etc. Being capable of adding numbers we can express multiplication (as multiplication of
+gives us three-bit adders, etc. Being capable of adding numbers we can multiply (as multiplication of
 finite numbers can be expressed in terms of finite number of additions); using the representation in binary complement
 form we can use complement and addition for subtraction, which allows us to express division and taking a reminder, etc.
 Finally, we can easily express conditional calculations in binary logic: let us have a one-bit condition (``true'' or ``false'') $c$ and
@@ -224,20 +224,114 @@ corresponds to a conditional construct
     if $c$ then $x$ else $y$ fi
 \end{lstlisting}
 
-Generalizing this construct we can implement a choice of one from $2^n$ values depending on $n$-bit condition, which
+Generalizing this construct we can implement a choice of one of $2^n$ values depending on $n$-bit condition, which
 gives us an implementation of memory. Thus, with just a few types of logical gates we can implement an impressive
-variety of computation.
+variety of computations.
 
-But how the gates themselves can be implemented?
+But how the gates themselves are implemented? In the evolution of hardware multiple ways were explored and utilized
+starting from purely mechanical appliances made of gears, springs, shafts, etc., through simple electrical
+devices with relays and vaccuum tubes to the nowdays semiconductor technologies. We consider a very simple implementation
+of logical gates using \emph{relays} since it does not require any specific knowledge of electronics.
+
+\begin{figure}[t]
+  \begin{subfigure}[t]{0.5\textwidth}
+    \centering
+    \includegraphics[scale=0.3]{images/06-07.png}
+    \caption{Idle state}
+    \label{relay-default}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.5\textwidth}
+    \centering
+    \includegraphics[scale=0.3]{images/06-06.png}
+    \caption{Powered state}
+    \label{relay-powered}
+  \end{subfigure}
+  \caption{A relay}
+  \label{relay-example}
+\end{figure}
+
+A relay is a simple electro-mechanical device which typically consists of a \emph{solenoid} (an electrical wire coiled over
+a cylindrical conductor core) and a group of controlled electrical contacts, one of which is mechanically connected to the solenoid's core.
+A relay has a few inputs/outputs:
+
+\begin{itemize}
+\item control input wires which directly connected to the solenoid;
+\item controlled inputs/outputs wires which connected to the contacts the relay controls.
+\end{itemize}
+
+A relay usually operates in two states. In the idle state when no electrical current flows the solenoid the contact group commutes
+controlled wires in some default manner. But when electric power is applied to the solenoind it produces magnetic field which
+makes the core to reswitsh the contacts and change the way the controlled contacts commute.
+
+As an example consider a simple relay in Fig.~\ref{relay-example}. Here the contact $x$ is control one, $a$, $b$ and $c$~--- controlled.
+In the default state (Fig.~\ref{relay-default}) when no power is given to $x$ the contacts $b$ and $c$ are commuted, $b$ and $a$ are not.
+However, when an electric power is applied to $x$ (Fig.~\ref{relay-powered}) the commuting scheme between $a$, $b$, and $c$ is
+changed: now $a$ and $b$ are commuted, $b$ and $c$ are not.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics{images/06-08.eps}
+  \caption{Relay-based negation implementation}
+  \label{relay-negation}
+\end{figure}
+
+The simplest gate we can implement with the relay is negation (Fig.~\ref{relay-negation}). Here we left pin $a$ unconnected, $b$ is
+constantly connected to the power source. Now, in the idle state when no signal is given to the pin $x$ there is a signal on the
+pin $c$. When a signal is given to the pin $x$ the relay recommutes the controlled pins, and the signal on $c$ disappears. Thus,
+$c$ holds a signal when $x$ does not and visa versa.
+
+To implement, say, a conjunction we need \emph{two} relays as there is two input arguments which require two input
+pins (one of each relay). We can successively connect power source and pins $a$ and $b$ of each relay as it is
+shown in Fig.~\ref{relay-conjunction}. Now, in order to have a signal on the pin $b_1$ we need two signals on
+pins $x_0$ and $x_1$ simultaneously, which means that $b_1=x_0\wedge x_1$. 
+
+\begin{figure}[t]
+  \centering
+  \includegraphics{images/06-09.eps}
+  \caption{Relay-based conjunction implementation}
+  \label{relay-conjunction}
+\end{figure}
+
+It is well-known that conjunction and negation form a complete set of boolean connectives: any other can be expressed
+using these two. For example,
+
+\[
+\begin{array}{rcl}
+  x\vee y & = & \neg (\neg x \wedge \neg y) \\
+  x\oplus y & = & (x \vee y) \wedge \neg (x \wedge y)
+\end{array}
+\]
+
+etc. Thus, we already can have a relay-based implementation (albeit not very efficient and reliable) for all imaginable
+hardware.
+
+In practice nowadays the majority of hardware devices is manufactured in the form of \emph{integrated circuits}: meshes
+of millions of primitive devices printed (or, more specifically, \emph{etched}) on a common semiconductor substrate (\emph{wafer}).
+As a rule multiple individual integrated circuits are placed on a single wafer, which is later cut into smaller
+pieces~--- \emph{dies}. Each die occupies just a few square millimiters of area, but using a microscope its
+layout can be visually observed and even photographed, resulting in a \emph{die shot} (see Fig.~\ref{die-shot}).
+Finally, each die is packed into a protective plastic or ceramic case with a number of electrical pins sticking out, which
+finally constitutes a microchip. We do not present any picture of a microchip here since if you never saw one you
+probably have chosen a wrong course to study\footnote{As of 2023.}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.07]{images/Intel_Pentium_II_Dixon_die_shot.jpg}
+  \caption{Intel Pentium III Die Shot}
+  \label{die-shot}
+\end{figure}
+
+Althought technologically the whole process is drastically different from manual combining of relays, ideologically
+it is very similar and each primitive semiconductor device (such as transistor) logically functions pretty much
+like a relay. 
 
 
 
+\subsection{Synchronous Hardware}
 
+\subsection{Programmability}
 
-
-
-
-
+\subsection{x86 Macroarchitecture}
 
 \section{Code Generation with Symbolic Interpreter}
 
